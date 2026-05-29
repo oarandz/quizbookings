@@ -127,32 +127,6 @@
   .stat-value.warn   { color: #f5c828; text-shadow: 0 0 20px rgba(245,200,40,0.6); }
   .stat-value.full   { color: #ff4466; text-shadow: 0 0 20px rgba(255,68,102,0.6); }
 
-  /* ── CAPACITY BAR ── */
-  .cap-wrap { margin-bottom: 14px; }
-  .cap-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.6rem;
-    letter-spacing: 0.12em;
-    color: rgba(255,255,255,0.35);
-    margin-bottom: 6px;
-  }
-  .cap-track {
-    height: 6px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  .cap-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #9b2fc9, #e8620a);
-    border-radius: 3px;
-    transition: width 0.5s ease;
-    width: 0%;
-  }
-  .cap-fill.warn { background: linear-gradient(90deg, #e8620a, #f5c828); }
-  .cap-fill.full { background: #ff4466; }
-
   /* ── TABS ── */
   .tabs {
     display: grid;
@@ -478,16 +452,6 @@
     <div id="stat-remaining">—</div>
     <div id="stat-players">—</div>
   </div>
-
-  <!-- CAPACITY BAR -->
-  <div class="cap-wrap">
-    <div class="cap-labels">
-      <span id="cap-label">0 of 12 tables booked</span>
-      <span id="cap-pct">0%</span>
-    </div>
-    <div class="cap-track">
-      <div class="cap-fill" id="cap-fill"></div>
-    </div>
   </div>
 
   <!-- SETUP NOTICE -->
@@ -585,11 +549,7 @@
 
     <!-- BOOKINGS (hidden until password correct) -->
     <div id="view-content" style="display:none;">
-      <div class="stat-row" style="margin-bottom:14px;">
-        <div class="stat-card">
-          <div class="stat-label">Tables Left</div>
-          <div class="stat-value" id="stat-remaining-view">—</div>
-        </div>
+      <div class="stat-row" style="margin-bottom:14px;grid-template-columns:1fr;">
         <div class="stat-card">
           <div class="stat-label">Players In</div>
           <div class="stat-value" id="stat-players-view">—</div>
@@ -618,7 +578,6 @@
 //  CONFIG — paste your script URL here
 // ═══════════════════════════════════
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbrpYr6sfzJ8hD_elEbJP7ZDybLhPlTDm_3iSQ4a_C5h7hr1C9WpuGiDqYr76a-zdy-A/exec';
-const MAX_TABLES = 12;
 
 let bookings = [];
 let demoMode = false;
@@ -681,128 +640,7 @@ async function loadBookings() {
 }
 
 function renderAll() {
-  const remaining = MAX_TABLES - bookings.length;
   const players   = bookings.reduce((s,b) => s + (parseInt(b.players)||0), 0);
-  const pct       = Math.round((bookings.length / MAX_TABLES) * 100);
-
-  const remClass = 'stat-value' + (remaining <= 0 ? ' full' : remaining <= 3 ? ' warn' : '');
-  ['stat-remaining', 'stat-remaining-view'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) { el.textContent = remaining; el.className = remClass; }
-  });
-  ['stat-players', 'stat-players-view'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = players || '—';
-  });
-  document.getElementById('cap-label').textContent    = `${bookings.length} of ${MAX_TABLES} tables booked`;
-  document.getElementById('cap-pct').textContent      = pct + '%';
-
-  const fill = document.getElementById('cap-fill');
-  fill.style.width = pct + '%';
-  fill.className = 'cap-fill' + (pct >= 100 ? ' full' : pct >= 70 ? ' warn' : '');
-
-  const list = document.getElementById('bookings-list');
-  if (!bookings.length) {
-    list.innerHTML = `<div class="empty-state"><span class="empty-icon">🍺</span>No bookings yet for this week.<br>Be the first!</div>`;
-    return;
-  }
-
-  list.innerHTML = bookings.map((b, i) => `
-    <div class="booking-row">
-      <div class="booking-num">${i+1}</div>
-      <div class="booking-body">
-        <div class="booking-name">${esc(b.name)}</div>
-        ${b.team ? `<div class="booking-team">${esc(b.team)}</div>` : ''}
-        ${b.notes ? `<div class="booking-notes">"${esc(b.notes)}"</div>` : ''}
-      </div>
-      <div class="booking-meta">
-        <div class="booking-time">${fmtTime(b.time)}</div>
-        <div class="booking-players">👥 ${esc(b.players)} player${b.players==1?'':'s'}</div>
-      </div>
-      <button class="booking-cancel" onclick="cancelBooking('${esc(b.id||i)}',${i})" title="Cancel">✕</button>
-    </div>
-  `).join('');
-}
-
-async function submitBooking() {
-  const name    = document.getElementById('field-name').value.trim();
-  const team    = document.getElementById('field-team').value.trim();
-  const players = document.getElementById('field-players').value;
-  const time    = document.getElementById('field-time').value;
-  const notes   = document.getElementById('field-notes').value.trim();
-  const btn     = document.getElementById('btn-submit');
-  const status  = document.getElementById('book-status');
-
-  if (!name)    { setStatus(status,'error','Please enter your name.'); return; }
-  if (!players) { setStatus(status,'error','Please select number of players.'); return; }
-  if (!time)    { setStatus(status,'error','Please select an arrival time.'); return; }
-  if (bookings.length >= MAX_TABLES) { setStatus(status,'error','Sorry — this quiz night is fully booked!'); return; }
-
-  const booking = {
-    id: Date.now().toString(),
-    name, team, players, time, notes,
-    date: isoDate(nextThursday()),
-    timestamp: new Date().toISOString()
-  };
-
-  if (demoMode) {
-    bookings.push(booking);
-    renderAll();
-    setStatus(status, 'success', `✓ Table reserved for ${name}! (Demo — not saved to Google Sheets)`);
-    resetForm();
-    return;
-  }
-
-  btn.disabled = true;
-  setStatus(status, 'loading', 'Saving your booking…');
-
-  try {
-    const params = new URLSearchParams({
-      action: 'add',
-      id: booking.id,
-      date: booking.date,
-      name: booking.name,
-      team: booking.team,
-      players: booking.players,
-      time: booking.time,
-      notes: booking.notes,
-      timestamp: booking.timestamp
-    });
-    const res  = await fetch(`${SCRIPT_URL}?${params}`);
-    const data = await res.json();
-    if (data.success) {
-      bookings.push({...booking, id: data.id || booking.id});
-      renderAll();
-      setStatus(status, 'success', `✓ Reserved for ${name}! See you Thursday.`);
-      resetForm();
-    } else {
-      setStatus(status, 'error', data.error || 'Something went wrong. Please try again.');
-    }
-  } catch(e) {
-    setStatus(status, 'error', 'Could not connect. Please try again.');
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-async function cancelBooking(id, idx) {
-  if (!confirm('Cancel this booking?')) return;
-  if (demoMode) { bookings.splice(idx,1); renderAll(); return; }
-  try {
-    const params = new URLSearchParams({ action: 'cancel', id });
-    const res  = await fetch(`${SCRIPT_URL}?${params}`);
-    const data = await res.json();
-    if (data.success) { bookings.splice(idx,1); renderAll(); }
-  } catch(e) { alert('Could not cancel. Please try again.'); }
-}
-
-function setStatus(el, type, msg) {
-  el.className = `status-bar ${type}`;
-  el.innerHTML = type === 'loading' ? `<span class="spinner"></span>${msg}` : msg;
-}
-
-function resetForm() {
-  ['field-name','field-team','field-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('field-players').value = '';
   document.getElementById('field-time').value    = '';
 }
