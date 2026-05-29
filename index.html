@@ -581,6 +581,8 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbrpYr6sfzJ8hD_elEb
 
 let bookings = [];
 let demoMode = false;
+const QUIZ_PASSWORD = 'woodsmanquiz';
+let viewUnlocked = false;
 
 window.addEventListener('DOMContentLoaded', () => {
   setQuizDate();
@@ -674,8 +676,6 @@ function renderAll() {
   `).join('');
 }
 
-const QUIZ_PASSWORD = 'woodsmanquiz';
-let viewUnlocked = false;
 
 function checkPassword() {
   const val = document.getElementById('pw-input').value;
