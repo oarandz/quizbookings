@@ -468,19 +468,15 @@
   </div>
 
   <!-- STAT ROW -->
-  <div class="stat-row">
+  <div class="stat-row" style="grid-template-columns:1fr;">
     <div class="stat-card">
       <div class="stat-label">Next Quiz</div>
       <div class="stat-value orange" id="stat-date" style="font-size:clamp(16px,3vw,28px);line-height:1.15;">—</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Tables Left</div>
-      <div class="stat-value" id="stat-remaining">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Players In</div>
-      <div class="stat-value" id="stat-players">—</div>
-    </div>
+  </div>
+  <div style="display:none;">
+    <div id="stat-remaining">—</div>
+    <div id="stat-players">—</div>
   </div>
 
   <!-- CAPACITY BAR -->
@@ -566,15 +562,46 @@
 
   <!-- ══ VIEW PANEL ══ -->
   <div id="panel-view" style="display:none;">
-    <div class="view-header">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.5);">
-        Bookings — <span id="view-date-label" style="color:#e8620a;">this Thursday</span>
+
+    <!-- PASSWORD GATE -->
+    <div id="view-gate">
+      <div class="panel" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.08em;color:#fff;text-shadow:0 0 30px rgba(232,98,10,0.5);">HOST ACCESS</div>
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.4);letter-spacing:0.1em;">Enter the password to view bookings</div>
+        <div class="field" style="width:100%;max-width:280px;">
+          <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPassword()" style="text-align:center;font-size:1rem;letter-spacing:0.15em;">
+        </div>
+        <button class="btn-primary" onclick="checkPassword()" style="max-width:280px;">UNLOCK</button>
+        <div id="pw-error" style="color:#ff4466;font-size:0.7rem;display:none;">Incorrect password</div>
       </div>
-      <button class="btn-ghost" onclick="loadBookings()">↻ Refresh</button>
     </div>
-    <div id="bookings-list">
-      <div class="empty-state"><span class="empty-icon">🍺</span>No bookings yet — be the first!</div>
+
+    <!-- BOOKINGS (hidden until password correct) -->
+    <div id="view-content" style="display:none;">
+      <div class="stat-row" style="margin-bottom:14px;">
+        <div class="stat-card">
+          <div class="stat-label">Tables Left</div>
+          <div class="stat-value" id="stat-remaining-view">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Players In</div>
+          <div class="stat-value" id="stat-players-view">—</div>
+        </div>
+      </div>
+      <div class="view-header">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.5);">
+          Bookings — <span id="view-date-label" style="color:#e8620a;">this Thursday</span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-ghost" onclick="loadBookings()">↻ Refresh</button>
+          <button class="btn-ghost" onclick="lockView()" style="border-color:rgba(255,68,102,0.3);color:rgba(255,68,102,0.6);">🔒 Lock</button>
+        </div>
+      </div>
+      <div id="bookings-list">
+        <div class="empty-state"><span class="empty-icon">🍺</span>No bookings yet — be the first!</div>
+      </div>
     </div>
+
   </div>
 
 </div><!-- /page -->
@@ -624,12 +651,13 @@ function showTab(tab) {
   document.getElementById('panel-view').style.display = tab === 'view' ? 'block' : 'none';
   document.getElementById('tab-book').classList.toggle('active', tab === 'book');
   document.getElementById('tab-view').classList.toggle('active', tab === 'view');
-  if (tab === 'view') loadBookings();
+  if (tab === 'view' && viewUnlocked) loadBookings();
 }
 
 async function loadBookings() {
   if (demoMode) { renderAll(); return; }
 
+  if (!viewUnlocked) return;
   document.getElementById('bookings-list').innerHTML =
     `<div class="empty-state"><span class="spinner" style="display:block;margin:0 auto 10px;"></span>Loading…</div>`;
 
@@ -650,11 +678,15 @@ function renderAll() {
   const players   = bookings.reduce((s,b) => s + (parseInt(b.players)||0), 0);
   const pct       = Math.round((bookings.length / MAX_TABLES) * 100);
 
-  const remEl = document.getElementById('stat-remaining');
-  remEl.textContent = remaining;
-  remEl.className   = 'stat-value' + (remaining <= 0 ? ' full' : remaining <= 3 ? ' warn' : '');
-
-  document.getElementById('stat-players').textContent = players || '—';
+  const remClass = 'stat-value' + (remaining <= 0 ? ' full' : remaining <= 3 ? ' warn' : '');
+  ['stat-remaining', 'stat-remaining-view'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = remaining; el.className = remClass; }
+  });
+  ['stat-players', 'stat-players-view'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = players || '—';
+  });
   document.getElementById('cap-label').textContent    = `${bookings.length} of ${MAX_TABLES} tables booked`;
   document.getElementById('cap-pct').textContent      = pct + '%';
 
@@ -673,11 +705,11 @@ function renderAll() {
       <div class="booking-num">${i+1}</div>
       <div class="booking-body">
         <div class="booking-name">${esc(b.name)}</div>
-        ${b.team  ? `<div class="booking-team">${esc(b.team)}</div>` : ''}
+        ${b.team ? `<div class="booking-team">${esc(b.team)}</div>` : ''}
         ${b.notes ? `<div class="booking-notes">"${esc(b.notes)}"</div>` : ''}
       </div>
       <div class="booking-meta">
-        <div class="booking-time">${esc(b.time)}</div>
+        <div class="booking-time">${fmtTime(b.time)}</div>
         <div class="booking-players">👥 ${esc(b.players)} player${b.players==1?'':'s'}</div>
       </div>
       <button class="booking-cancel" onclick="cancelBooking('${esc(b.id||i)}',${i})" title="Cancel">✕</button>
@@ -729,12 +761,8 @@ async function submitBooking() {
       notes: booking.notes,
       timestamp: booking.timestamp
     });
-    const url = `${SCRIPT_URL}?${params}`;
-    setStatus(status, 'loading', 'Sending to: ' + url);
-    const res  = await fetch(url);
-    const text = await res.text();
-    alert('Response: ' + text);
-    const data = JSON.parse(text);
+    const res  = await fetch(`${SCRIPT_URL}?${params}`);
+    const data = await res.json();
     if (data.success) {
       bookings.push({...booking, id: data.id || booking.id});
       renderAll();
@@ -744,8 +772,7 @@ async function submitBooking() {
       setStatus(status, 'error', data.error || 'Something went wrong. Please try again.');
     }
   } catch(e) {
-    alert('Error: ' + e.message);
-    setStatus(status, 'error', 'Error: ' + e.message);
+    setStatus(status, 'error', 'Could not connect. Please try again.');
   } finally {
     btn.disabled = false;
   }
@@ -773,8 +800,51 @@ function resetForm() {
   document.getElementById('field-time').value    = '';
 }
 
+const QUIZ_PASSWORD = 'woodsmanquiz';
+let viewUnlocked = false;
+
+function checkPassword() {
+  const val = document.getElementById('pw-input').value;
+  if (val === QUIZ_PASSWORD) {
+    viewUnlocked = true;
+    document.getElementById('view-gate').style.display = 'none';
+    document.getElementById('view-content').style.display = 'block';
+    loadBookings();
+  } else {
+    document.getElementById('pw-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function lockView() {
+  viewUnlocked = false;
+  document.getElementById('view-gate').style.display = 'block';
+  document.getElementById('view-content').style.display = 'none';
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-error').style.display = 'none';
+}
+
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtTime(val) {
+  if (!val) return '—';
+  // If it's already a plain string like "7:30pm", return it tidied
+  if (typeof val === 'string' && /[ap]m/i.test(val)) {
+    return val.replace('pm',' pm').replace('am',' am').replace('  ',' ');
+  }
+  // If it came back as a Date object serialised to string like "1899-12-30T19:30:00.000Z"
+  const d = new Date(val);
+  if (!isNaN(d)) {
+    let h = d.getUTCHours();
+    const m = String(d.getUTCMinutes()).padStart(2,'0');
+    const ampm = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    return `${h}:${m} ${ampm}`;
+  }
+  return String(val);
 }
 </script>
 
