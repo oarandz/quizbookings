@@ -461,8 +461,8 @@
 
   <!-- TABS -->
   <div class="tabs">
-    <button class="tab-btn active" id="tab-book" onclick="showTab('book')">Book a Table</button>
-    <button class="tab-btn" id="tab-view" onclick="showTab('view')">View Bookings</button>
+    <button class="tab-btn active" id="tab-book">Book a Table</button>
+    <button class="tab-btn" id="tab-view">View Bookings</button>
   </div>
 
   <!-- ══ BOOK PANEL ══ -->
@@ -526,7 +526,7 @@
       </div>
 
       <div class="divider"></div>
-      <button class="btn-primary" id="btn-submit" onclick="submitBooking()">RESERVE TABLE</button>
+      <button class="btn-primary" id="btn-submit">RESERVE TABLE</button>
       <div class="status-bar" id="book-status"></div>
     </div>
   </div>
@@ -586,6 +586,10 @@ window.addEventListener('DOMContentLoaded', () => {
   setQuizDate();
   loadBookings();
   if (!demoMode) document.getElementById('setup-notice').style.display = 'none';
+
+  document.getElementById('btn-submit').addEventListener('click', submitBooking);
+  document.getElementById('tab-book').addEventListener('click', () => showTab('book'));
+  document.getElementById('tab-view').addEventListener('click', () => showTab('view'));
 });
 
 function nextThursday() {
@@ -640,9 +644,34 @@ async function loadBookings() {
 }
 
 function renderAll() {
-  const players   = bookings.reduce((s,b) => s + (parseInt(b.players)||0), 0);
-  document.getElementById('field-players').value = '';
-  document.getElementById('field-time').value    = '';
+  const players = bookings.reduce((s,b) => s + (parseInt(b.players)||0), 0);
+
+  const playersEl = document.getElementById('stat-players-view');
+  if (playersEl) playersEl.textContent = players || '—';
+
+  const list = document.getElementById('bookings-list');
+  if (!list) return;
+
+  if (!bookings.length) {
+    list.innerHTML = `<div class="empty-state"><span class="empty-icon">🍺</span>No bookings yet for this week.<br>Be the first!</div>`;
+    return;
+  }
+
+  list.innerHTML = bookings.map((b, i) => `
+    <div class="booking-row">
+      <div class="booking-num">${i+1}</div>
+      <div class="booking-body">
+        <div class="booking-name">${esc(b.name)}</div>
+        ${b.team  ? `<div class="booking-team">${esc(b.team)}</div>` : ''}
+        ${b.notes ? `<div class="booking-notes">"${esc(b.notes)}"</div>` : ''}
+      </div>
+      <div class="booking-meta">
+        <div class="booking-time">${fmtTime(b.time)}</div>
+        <div class="booking-players">👥 ${esc(b.players)} player${b.players==1?'':'s'}</div>
+      </div>
+      <button class="booking-cancel" onclick="cancelBooking('${esc(b.id||i)}',${i})" title="Cancel">✕</button>
+    </div>
+  `).join('');
 }
 
 const QUIZ_PASSWORD = 'woodsmanquiz';
@@ -668,6 +697,88 @@ function lockView() {
   document.getElementById('view-content').style.display = 'none';
   document.getElementById('pw-input').value = '';
   document.getElementById('pw-error').style.display = 'none';
+}
+
+async function submitBooking() {
+  const name    = document.getElementById('field-name').value.trim();
+  const team    = document.getElementById('field-team').value.trim();
+  const players = document.getElementById('field-players').value;
+  const time    = document.getElementById('field-time').value;
+  const notes   = document.getElementById('field-notes').value.trim();
+  const btn     = document.getElementById('btn-submit');
+  const status  = document.getElementById('book-status');
+
+  if (!name)    { setStatus(status,'error','Please enter your name.'); return; }
+  if (!players) { setStatus(status,'error','Please select number of players.'); return; }
+  if (!time)    { setStatus(status,'error','Please select an arrival time.'); return; }
+
+  const booking = {
+    id: Date.now().toString(),
+    name, team, players, time, notes,
+    date: isoDate(nextThursday()),
+    timestamp: new Date().toISOString()
+  };
+
+  if (demoMode) {
+    bookings.push(booking);
+    renderAll();
+    setStatus(status, 'success', `✓ Table reserved for ${name}! (Demo — not saved to Google Sheets)`);
+    resetForm();
+    return;
+  }
+
+  btn.disabled = true;
+  setStatus(status, 'loading', 'Saving your booking…');
+
+  try {
+    const params = new URLSearchParams({
+      action: 'add',
+      id: booking.id,
+      date: booking.date,
+      name: booking.name,
+      team: booking.team,
+      players: booking.players,
+      time: booking.time,
+      notes: booking.notes,
+      timestamp: booking.timestamp
+    });
+    const res  = await fetch(`${SCRIPT_URL}?${params}`);
+    const data = await res.json();
+    if (data.success) {
+      bookings.push({...booking, id: data.id || booking.id});
+      renderAll();
+      setStatus(status, 'success', `✓ Reserved for ${name}! See you Thursday.`);
+      resetForm();
+    } else {
+      setStatus(status, 'error', data.error || 'Something went wrong. Please try again.');
+    }
+  } catch(e) {
+    setStatus(status, 'error', 'Could not connect. Please try again.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function cancelBooking(id, idx) {
+  if (!confirm('Cancel this booking?')) return;
+  if (demoMode) { bookings.splice(idx,1); renderAll(); return; }
+  try {
+    const params = new URLSearchParams({ action: 'cancel', id });
+    const res  = await fetch(`${SCRIPT_URL}?${params}`);
+    const data = await res.json();
+    if (data.success) { bookings.splice(idx,1); renderAll(); }
+  } catch(e) { alert('Could not cancel. Please try again.'); }
+}
+
+function setStatus(el, type, msg) {
+  el.className = `status-bar ${type}`;
+  el.innerHTML = type === 'loading' ? `<span class="spinner"></span>${msg}` : msg;
+}
+
+function resetForm() {
+  ['field-name','field-team','field-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('field-players').value = '';
+  document.getElementById('field-time').value    = '';
 }
 
 function esc(s) {
