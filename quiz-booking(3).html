@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Damson Quizes — Book a Table</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #1a0040;
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle noise grain */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* Glow behind content */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 60%;
+    background: radial-gradient(ellipse, rgba(155,47,201,0.25) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 12vw, 110px);
+    letter-spacing: 0.06em;
+    line-height: 0.9;
+    color: #fff;
+    text-shadow: 0 0 40px rgba(232,98,10,0.5), 0 0 80px rgba(155,47,201,0.3);
+  }
+  .header-sub {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    color: rgba(255,255,255,0.45);
+    font-size: 1rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  /* ── PANEL — the core quiz-screen card style ── */
+  .panel {
+    background: rgba(100,30,160,0.45);
+    border: 2.5px solid #e8620a;
+    border-radius: 24px;
+    padding: 22px 26px;
+    position: relative;
+  }
+  .panel-purple {
+    background: rgba(155,89,182,0.4);
+    border: 2.5px solid #e8620a;
+    border-radius: 24px;
+    padding: 22px 26px;
+  }
+  .panel-dark {
+    background: rgba(80,20,140,0.45);
+    border: 2.5px solid rgba(232,98,10,0.7);
+    border-radius: 20px;
+    padding: 18px 22px;
+  }
+
+  /* ── STAT ROW ── */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .stat-card {
+    background: rgba(100,30,160,0.45);
+    border: 2.5px solid rgba(232,98,10,0.7);
+    border-radius: 20px;
+    padding: 16px 18px;
+    text-align: center;
+  }
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 5vw, 52px);
+    line-height: 1;
+    color: #fff;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 20px rgba(232,98,10,0.5);
+  }
+  .stat-value.orange { color: #e8620a; text-shadow: 0 0 20px rgba(232,98,10,0.7); }
+  .stat-value.warn   { color: #f5c828; text-shadow: 0 0 20px rgba(245,200,40,0.6); }
+  .stat-value.full   { color: #ff4466; text-shadow: 0 0 20px rgba(255,68,102,0.6); }
+
+  /* ── CAPACITY BAR ── */
+  .cap-wrap { margin-bottom: 14px; }
+  .cap-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 6px;
+  }
+  .cap-track {
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .cap-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #9b2fc9, #e8620a);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+  .cap-fill.warn { background: linear-gradient(90deg, #e8620a, #f5c828); }
+  .cap-fill.full { background: #ff4466; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .tab-btn {
+    padding: 12px 18px;
+    border: 2px solid rgba(232,98,10,0.35);
+    border-radius: 16px;
+    background: rgba(80,20,140,0.3);
+    color: rgba(255,255,255,0.45);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: center;
+  }
+  .tab-btn:hover { border-color: #e8620a; color: #fff; background: rgba(100,30,160,0.4); }
+  .tab-btn.active {
+    border-color: #e8620a;
+    color: #fff;
+    background: rgba(155,89,182,0.5);
+    text-shadow: 0 0 16px rgba(232,98,10,0.5);
+  }
+
+  /* ── BADGE — like the Q1 Q2 badges in the quiz ── */
+  .badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.95rem;
+    color: #fff;
+    background: linear-gradient(135deg, #e8620a, #9b2fc9);
+    border-radius: 8px;
+    padding: 4px 12px;
+    letter-spacing: 0.08em;
+    border: 1.5px solid rgba(232,98,10,0.6);
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #e8620a;
+    margin-bottom: 14px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── FORM ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .span-2 { grid-column: 1 / -1; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: 0.6rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    font-family: 'DM Mono', monospace;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    background: rgba(26,0,64,0.6);
+    border: 2px solid rgba(232,98,10,0.4);
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    padding: 10px 14px;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: #e8620a;
+    box-shadow: 0 0 0 3px rgba(232,98,10,0.15);
+  }
+  .field select option { background: #1a0040; color: #fff; }
+  .field textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
+  .field .hint { font-size: 0.58rem; color: rgba(255,255,255,0.3); letter-spacing: 0.06em; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1.5px;
+    background: linear-gradient(to right, transparent, rgba(232,98,10,0.5), rgba(155,89,182,0.5), transparent);
+    border-radius: 1px;
+    margin: 18px 0;
+  }
+
+  /* ── PRIMARY BUTTON ── */
+  .btn-primary {
+    width: 100%;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #e8620a, #9b2fc9);
+    border: none;
+    border-radius: 14px;
+    color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 4px 24px rgba(232,98,10,0.3);
+    margin-top: 4px;
+  }
+  .btn-primary:hover { opacity: 0.9; box-shadow: 0 6px 32px rgba(232,98,10,0.5); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.25); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ── GHOST BUTTON ── */
+  .btn-ghost {
+    background: rgba(26,0,64,0.5);
+    border: 1.5px solid rgba(232,98,10,0.3);
+    border-radius: 10px;
+    color: rgba(255,255,255,0.45);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-ghost:hover { border-color: #e8620a; color: #fff; background: rgba(100,30,160,0.4); }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 0.73rem;
+    line-height: 1.5;
+    display: none;
+    align-items: center;
+    gap: 10px;
+  }
+  .status-bar.success { display: flex; background: rgba(61,220,132,0.1); border: 1.5px solid rgba(61,220,132,0.35); color: #3ddc84; }
+  .status-bar.error   { display: flex; background: rgba(255,68,102,0.1); border: 1.5px solid rgba(255,68,102,0.35); color: #ff4466; }
+  .status-bar.loading { display: flex; background: rgba(232,98,10,0.08); border: 1.5px solid rgba(232,98,10,0.25); color: rgba(255,255,255,0.5); }
+
+  /* ── BOOKING ROWS — like quiz-q-row ── */
+  #bookings-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .booking-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(100,30,160,0.45);
+    border: 2px solid rgba(232,98,10,0.6);
+    border-radius: 20px;
+    padding: 12px 18px;
+    animation: rowIn 0.22s ease;
+  }
+  @keyframes rowIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .booking-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(22px, 3vw, 38px);
+    color: #fff;
+    background: linear-gradient(135deg, #e8620a, #9b2fc9);
+    border-radius: 10px;
+    padding: 4px 14px;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+    min-width: 60px;
+    text-align: center;
+    border: 1.5px solid rgba(232,98,10,0.6);
+  }
+  .booking-body { flex: 1; min-width: 0; }
+  .booking-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(20px, 3vw, 32px);
+    color: #fff;
+    letter-spacing: 0.04em;
+    line-height: 1.05;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .booking-team {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 0.88rem;
+    color: rgba(245,200,40,0.85);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .booking-notes {
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.35);
+    margin-top: 2px;
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .booking-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+  .booking-time {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(18px, 2.5vw, 28px);
+    color: #e8620a;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-shadow: 0 0 12px rgba(232,98,10,0.5);
+  }
+  .booking-players {
+    font-size: 0.58rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+  .booking-cancel {
+    background: none;
+    border: 1.5px solid transparent;
+    border-radius: 8px;
+    color: rgba(255,255,255,0.2);
+    font-size: 0.75rem;
+    padding: 5px 9px;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    font-family: 'DM Mono', monospace;
+  }
+  .booking-cancel:hover { border-color: rgba(255,68,102,0.5); color: #ff4466; background: rgba(255,68,102,0.08); }
+
+  .empty-state {
+    padding: 48px 24px;
+    text-align: center;
+    color: rgba(255,255,255,0.25);
+    font-size: 0.8rem;
+    line-height: 2;
+    border: 2px dashed rgba(232,98,10,0.25);
+    border-radius: 20px;
+  }
+  .empty-icon { font-size: 2rem; display: block; margin-bottom: 10px; opacity: 0.3; }
+
+  /* ── SPINNER ── */
+  .spinner {
+    display: inline-block;
+    width: 13px; height: 13px;
+    border: 2px solid rgba(255,255,255,0.12);
+    border-top-color: #e8620a;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── SETUP NOTICE ── */
+  .setup-notice {
+    background: rgba(232,98,10,0.08);
+    border: 1.5px solid rgba(232,98,10,0.3);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 0.7rem;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 14px;
+  }
+  .setup-notice code {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(232,98,10,0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: #e8620a;
+  }
+
+  /* ── VIEW HEADER ── */
+  .view-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  @media (max-width: 540px) {
+    .stat-row { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .page { padding: 24px 16px 60px; }
+    .panel, .panel-purple, .panel-dark { padding: 16px 18px; }
+  }
+  @media (max-width: 380px) {
+    .stat-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-title">DAMSON<br>QUIZES</div>
+    <div class="header-sub">Table Bookings</div>
+  </div>
+
+  <!-- STAT ROW -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">Next Quiz</div>
+      <div class="stat-value orange" id="stat-date" style="font-size:clamp(16px,3vw,28px);line-height:1.15;">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tables Left</div>
+      <div class="stat-value" id="stat-remaining">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Players In</div>
+      <div class="stat-value" id="stat-players">—</div>
+    </div>
+  </div>
+
+  <!-- CAPACITY BAR -->
+  <div class="cap-wrap">
+    <div class="cap-labels">
+      <span id="cap-label">0 of 12 tables booked</span>
+      <span id="cap-pct">0%</span>
+    </div>
+    <div class="cap-track">
+      <div class="cap-fill" id="cap-fill"></div>
+    </div>
+  </div>
+
+  <!-- SETUP NOTICE -->
+  <div class="setup-notice" id="setup-notice">
+    ⚙ <strong style="color:#e8620a;">Setup required</strong> — open this file in a text editor and replace <code>https://script.google.com/macros/s/AKfycbzbrpYr6sfzJ8hD_elEbJP7ZDybLhPlTDm_3iSQ4a_C5h7hr1C9WpuGiDqYr76a-zdy-A/exec</code> with your Google Apps Script URL. Until then bookings work in <strong>demo mode</strong> (not saved). Full instructions at the bottom of this file.
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-book" onclick="showTab('book')">Book a Table</button>
+    <button class="tab-btn" id="tab-view" onclick="showTab('view')">View Bookings</button>
+  </div>
+
+  <!-- ══ BOOK PANEL ══ -->
+  <div id="panel-book">
+    <div class="panel">
+      <div class="section-label">Reserve Your Table</div>
+
+      <div class="form-grid">
+
+        <div class="field">
+          <label>Your Name <span style="color:#e8620a">*</span></label>
+          <input type="text" id="field-name" placeholder="e.g. Owen" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label>Team Name <span style="color:rgba(255,255,255,0.25);font-size:0.55rem">(optional)</span></label>
+          <input type="text" id="field-team" placeholder="e.g. Quiz Khalifa" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label>No. of Players <span style="color:#e8620a">*</span></label>
+          <select id="field-players">
+            <option value="">— select —</option>
+            <option value="1">1 player</option>
+            <option value="2">2 players</option>
+            <option value="3">3 players</option>
+            <option value="4">4 players</option>
+            <option value="5">5 players</option>
+            <option value="6">6 players</option>
+            <option value="7">7 players</option>
+            <option value="8">8 players</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Arrival Time <span style="color:#e8620a">*</span></label>
+          <select id="field-time">
+            <option value="">— select —</option>
+            <option value="7:00pm">7:00 pm</option>
+            <option value="7:15pm">7:15 pm</option>
+            <option value="7:30pm">7:30 pm</option>
+            <option value="7:45pm">7:45 pm</option>
+            <option value="8:00pm">8:00 pm</option>
+            <option value="8:15pm">8:15 pm — quiz start</option>
+          </select>
+          <span class="hint">Quiz starts at 8:15 pm</span>
+        </div>
+
+        <div class="field span-2">
+          <label>Notes <span style="color:rgba(255,255,255,0.25);font-size:0.55rem">(optional)</span></label>
+          <textarea id="field-notes" placeholder="e.g. accessibility needs, joining late from work…"></textarea>
+        </div>
+
+      </div>
+
+      <div class="divider"></div>
+      <button class="btn-primary" id="btn-submit" onclick="submitBooking()">RESERVE TABLE</button>
+      <div class="status-bar" id="book-status"></div>
+    </div>
+  </div>
+
+  <!-- ══ VIEW PANEL ══ -->
+  <div id="panel-view" style="display:none;">
+    <div class="view-header">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.5);">
+        Bookings — <span id="view-date-label" style="color:#e8620a;">this Thursday</span>
+      </div>
+      <button class="btn-ghost" onclick="loadBookings()">↻ Refresh</button>
+    </div>
+    <div id="bookings-list">
+      <div class="empty-state"><span class="empty-icon">🍺</span>No bookings yet — be the first!</div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ═══════════════════════════════════
+//  CONFIG — paste your script URL here
+// ═══════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbrpYr6sfzJ8hD_elEbJP7ZDybLhPlTDm_3iSQ4a_C5h7hr1C9WpuGiDqYr76a-zdy-A/exec';
+const MAX_TABLES = 12;
+
+let bookings = [];
+let demoMode = SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzbrpYr6sfzJ8hD_elEbJP7ZDybLhPlTDm_3iSQ4a_C5h7hr1C9WpuGiDqYr76a-zdy-A/exec';
+
+window.addEventListener('DOMContentLoaded', () => {
+  setQuizDate();
+  loadBookings();
+  if (!demoMode) document.getElementById('setup-notice').style.display = 'none';
+});
+
+function nextThursday() {
+  const now = new Date();
+  const diff = (4 - now.getDay() + 7) % 7 || 7;
+  const d = new Date(now);
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function fmtDate(d) {
+  const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function isoDate(d) { return d.toISOString().split('T')[0]; }
+
+function setQuizDate() {
+  const d = nextThursday();
+  const label = fmtDate(d);
+  document.getElementById('stat-date').textContent = label;
+  document.getElementById('view-date-label').textContent = label;
+}
+
+function showTab(tab) {
+  document.getElementById('panel-book').style.display = tab === 'book' ? 'block' : 'none';
+  document.getElementById('panel-view').style.display = tab === 'view' ? 'block' : 'none';
+  document.getElementById('tab-book').classList.toggle('active', tab === 'book');
+  document.getElementById('tab-view').classList.toggle('active', tab === 'view');
+  if (tab === 'view') loadBookings();
+}
+
+async function loadBookings() {
+  if (demoMode) { renderAll(); return; }
+
+  document.getElementById('bookings-list').innerHTML =
+    `<div class="empty-state"><span class="spinner" style="display:block;margin:0 auto 10px;"></span>Loading…</div>`;
+
+  try {
+    const res  = await fetch(`${SCRIPT_URL}?action=get&date=${isoDate(nextThursday())}`);
+    const data = await res.json();
+    bookings   = data.bookings || [];
+    renderAll();
+  } catch(e) {
+    document.getElementById('bookings-list').innerHTML =
+      `<div class="empty-state" style="color:#ff4466;border-color:rgba(255,68,102,0.25);">
+        <span class="empty-icon">⚠</span>Couldn't load bookings.<br>Check your script URL.</div>`;
+  }
+}
+
+function renderAll() {
+  const remaining = MAX_TABLES - bookings.length;
+  const players   = bookings.reduce((s,b) => s + (parseInt(b.players)||0), 0);
+  const pct       = Math.round((bookings.length / MAX_TABLES) * 100);
+
+  const remEl = document.getElementById('stat-remaining');
+  remEl.textContent = remaining;
+  remEl.className   = 'stat-value' + (remaining <= 0 ? ' full' : remaining <= 3 ? ' warn' : '');
+
+  document.getElementById('stat-players').textContent = players || '—';
+  document.getElementById('cap-label').textContent    = `${bookings.length} of ${MAX_TABLES} tables booked`;
+  document.getElementById('cap-pct').textContent      = pct + '%';
+
+  const fill = document.getElementById('cap-fill');
+  fill.style.width = pct + '%';
+  fill.className = 'cap-fill' + (pct >= 100 ? ' full' : pct >= 70 ? ' warn' : '');
+
+  const list = document.getElementById('bookings-list');
+  if (!bookings.length) {
+    list.innerHTML = `<div class="empty-state"><span class="empty-icon">🍺</span>No bookings yet for this week.<br>Be the first!</div>`;
+    return;
+  }
+
+  list.innerHTML = bookings.map((b, i) => `
+    <div class="booking-row">
+      <div class="booking-num">${i+1}</div>
+      <div class="booking-body">
+        <div class="booking-name">${esc(b.name)}</div>
+        ${b.team  ? `<div class="booking-team">${esc(b.team)}</div>` : ''}
+        ${b.notes ? `<div class="booking-notes">"${esc(b.notes)}"</div>` : ''}
+      </div>
+      <div class="booking-meta">
+        <div class="booking-time">${esc(b.time)}</div>
+        <div class="booking-players">👥 ${esc(b.players)} player${b.players==1?'':'s'}</div>
+      </div>
+      <button class="booking-cancel" onclick="cancelBooking('${esc(b.id||i)}',${i})" title="Cancel">✕</button>
+    </div>
+  `).join('');
+}
+
+async function submitBooking() {
+  const name    = document.getElementById('field-name').value.trim();
+  const team    = document.getElementById('field-team').value.trim();
+  const players = document.getElementById('field-players').value;
+  const time    = document.getElementById('field-time').value;
+  const notes   = document.getElementById('field-notes').value.trim();
+  const btn     = document.getElementById('btn-submit');
+  const status  = document.getElementById('book-status');
+
+  if (!name)    { setStatus(status,'error','Please enter your name.'); return; }
+  if (!players) { setStatus(status,'error','Please select number of players.'); return; }
+  if (!time)    { setStatus(status,'error','Please select an arrival time.'); return; }
+  if (bookings.length >= MAX_TABLES) { setStatus(status,'error','Sorry — this quiz night is fully booked!'); return; }
+
+  const booking = {
+    id: Date.now().toString(),
+    name, team, players, time, notes,
+    date: isoDate(nextThursday()),
+    timestamp: new Date().toISOString()
+  };
+
+  if (demoMode) {
+    bookings.push(booking);
+    renderAll();
+    setStatus(status, 'success', `✓ Table reserved for ${name}! (Demo — not saved to Google Sheets)`);
+    resetForm();
+    return;
+  }
+
+  btn.disabled = true;
+  setStatus(status, 'loading', 'Saving your booking…');
+
+  try {
+    const params = new URLSearchParams({
+      action: 'add',
+      id: booking.id,
+      date: booking.date,
+      name: booking.name,
+      team: booking.team,
+      players: booking.players,
+      time: booking.time,
+      notes: booking.notes,
+      timestamp: booking.timestamp
+    });
+    const url = `${SCRIPT_URL}?${params}`;
+    setStatus(status, 'loading', 'Sending to: ' + url);
+    const res  = await fetch(url);
+    const text = await res.text();
+    alert('Response: ' + text);
+    const data = JSON.parse(text);
+    if (data.success) {
+      bookings.push({...booking, id: data.id || booking.id});
+      renderAll();
+      setStatus(status, 'success', `✓ Reserved for ${name}! See you Thursday.`);
+      resetForm();
+    } else {
+      setStatus(status, 'error', data.error || 'Something went wrong. Please try again.');
+    }
+  } catch(e) {
+    alert('Error: ' + e.message);
+    setStatus(status, 'error', 'Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function cancelBooking(id, idx) {
+  if (!confirm('Cancel this booking?')) return;
+  if (demoMode) { bookings.splice(idx,1); renderAll(); return; }
+  try {
+    const params = new URLSearchParams({ action: 'cancel', id });
+    const res  = await fetch(`${SCRIPT_URL}?${params}`);
+    const data = await res.json();
+    if (data.success) { bookings.splice(idx,1); renderAll(); }
+  } catch(e) { alert('Could not cancel. Please try again.'); }
+}
+
+function setStatus(el, type, msg) {
+  el.className = `status-bar ${type}`;
+  el.innerHTML = type === 'loading' ? `<span class="spinner"></span>${msg}` : msg;
+}
+
+function resetForm() {
+  ['field-name','field-team','field-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('field-players').value = '';
+  document.getElementById('field-time').value    = '';
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+
+<!--
+════════════════════════════════════════════════════════════════
+  STEP-BY-STEP GOOGLE SHEETS SETUP GUIDE
+════════════════════════════════════════════════════════════════
+
+STEP 1 — Create the Google Sheet
+---------------------------------
+1. Go to sheets.google.com — create a new blank spreadsheet.
+2. Name it "Damson Quiz Bookings" (or whatever you like).
+3. In Sheet1, add these headers in row 1:
+   A1: id   B1: date   C1: name   D1: team
+   E1: players   F1: time   G1: notes   H1: timestamp
+
+
+STEP 2 — Create the Apps Script
+---------------------------------
+1. In your Google Sheet: Extensions → Apps Script
+2. Delete everything and paste this:
+
+─────────────────────────────────────────────────
+const SHEET_NAME = 'Sheet1';
+
+function doGet(e) {
+  const sheet    = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const date     = e.parameter.date;
+  const rows     = sheet.getDataRange().getValues();
+  const hdrs     = rows[0];
+  const bookings = rows.slice(1)
+    .filter(r => r[1] === date)
+    .map(r => { const o={}; hdrs.forEach((h,i)=>o[h]=r[i]); return o; });
+  return ContentService
+    .createTextOutput(JSON.stringify({ bookings }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const sheet   = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const payload = JSON.parse(e.postData.contents);
+  if (payload.action === 'add') {
+    const b = payload.booking;
+    sheet.appendRow([b.id, b.date, b.name, b.team, b.players, b.time, b.notes, b.timestamp]);
+    return ContentService
+      .createTextOutput(JSON.stringify({ success:true, id:b.id }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  if (payload.action === 'cancel') {
+    const rows = sheet.getDataRange().getValues();
+    for (let i=1; i<rows.length; i++) {
+      if (String(rows[i][0]) === String(payload.id)) { sheet.deleteRow(i+1); break; }
+    }
+    return ContentService
+      .createTextOutput(JSON.stringify({ success:true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+─────────────────────────────────────────────────
+
+
+STEP 3 — Deploy as a Web App
+---------------------------------
+1. Click "Deploy" → "New deployment"
+2. Click the gear ⚙ next to "Type" → select "Web app"
+3. "Execute as" → Me
+4. "Who has access" → Anyone
+5. Click "Deploy" → Authorise when prompted
+   (If you see "Google hasn't verified this app" → click Advanced
+   → "Go to [project] (unsafe)" — normal for personal scripts)
+6. Copy the Web app URL:
+   https://script.google.com/macros/s/AKfyc.../exec
+
+
+STEP 4 — Connect this page
+---------------------------------
+1. Open quiz-booking.html in a text editor
+2. Find:   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbrpYr6sfzJ8hD_elEbJP7ZDybLhPlTDm_3iSQ4a_C5h7hr1C9WpuGiDqYr76a-zdy-A/exec';
+3. Replace https://script.google.com/macros/s/AKfycbzbrpYr6sfzJ8hD_elEbJP7ZDybLhPlTDm_3iSQ4a_C5h7hr1C9WpuGiDqYr76a-zdy-A/exec with your URL from Step 3
+4. Save. The orange notice disappears — you're live!
+
+
+STEP 5 — Share the page
+---------------------------------
+• Netlify (netlify.com) — drag and drop the file, free hosting, get a link
+• GitHub Pages — free, if you use GitHub
+• Or just share the HTML file directly — opens in any browser
+
+Bookings auto-reset each week. The page always points to the
+upcoming Thursday — no maintenance needed.
+════════════════════════════════════════════════════════════════
+-->
+</body>
+</html>
