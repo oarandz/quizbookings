@@ -1081,35 +1081,38 @@ async function lookupBooking() {
   errEl.style.display = 'none';
   if (!rawPhone) return;
 
-  // Check all upcoming Thursdays for bookings under this number
-  const allThursdays = upcomingThursdays(16);
-  const results = [];
+  const findBtn = document.querySelector('#manage-gate .btn-primary');
+  if (findBtn) { findBtn.disabled = true; findBtn.textContent = 'Searching…'; }
 
   try {
-    for (const d of allThursdays) {
-      const params = new URLSearchParams({ action: 'lookup', phone, date: isoDate(d) });
-      const res  = await fetch(`${SCRIPT_URL}?${params}`);
-      const data = await res.json();
-      if (data.booking) results.push(data.booking);
-    }
+    // Single call — returns all bookings for this phone number across all dates
+    const params = new URLSearchParams({ action: 'lookup', phone });
+    const res  = await fetch(`${SCRIPT_URL}?${params}`);
+    const data = await res.json();
+    const results = (data.bookings || []).filter(b => {
+      // Only show upcoming dates
+      const d = new Date((String(b.date).includes('T') ? b.date : b.date + 'T12:00:00'));
+      const today = new Date(); today.setHours(0,0,0,0);
+      return d >= today;
+    });
 
     if (results.length === 0) {
       errEl.style.display = 'block';
+      if (findBtn) { findBtn.disabled = false; findBtn.textContent = 'FIND MY BOOKINGS'; }
       return;
     }
 
     myBookings = results;
 
     if (results.length === 1) {
-      // Only one booking — go straight to edit view
       openEditBooking(results[0]);
     } else {
-      // Show list to pick from
       showBookingList(results);
     }
   } catch(e) {
     errEl.textContent = 'Could not connect. Please try again.';
     errEl.style.display = 'block';
+    if (findBtn) { findBtn.disabled = false; findBtn.textContent = 'FIND MY BOOKINGS'; }
   }
 }
 
