@@ -1049,12 +1049,6 @@ function renderAll() {
         + '<div class="booking-time">' + fmtTime(b.time) + '</div>'
         + '<div class="booking-players">&#x1F465; ' + esc(b.players) + ' player' + (b.players==1?'':'s') + '</div>'
       + '</div>';
-    var cancelBtn = document.createElement('button');
-    cancelBtn.className = 'booking-cancel';
-    cancelBtn.title = 'Cancel';
-    cancelBtn.innerHTML = '&#x2715;';
-    cancelBtn.addEventListener('click', (function(id, idx){ return function(){ cancelBooking(id, idx); }; })(b.id||i, i));
-    row.appendChild(cancelBtn);
     list.appendChild(row);
   });
 }
