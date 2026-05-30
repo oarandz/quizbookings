@@ -615,8 +615,9 @@ function renderCal() {
     const isThu  = d.getDay() === 4;
     const isPast = d < today;
     const isSel  = calSelectedDate && isoDate(calSelectedDate) === isoDate(d);
-    const clickable = isThu && !isPast;
     const iso = isoDate(d);
+    const noQuiz = NO_QUIZ_DATES.includes(iso);
+    const clickable = isThu && !isPast && !noQuiz;
 
     const cell = document.createElement('div');
     cell.textContent = day;
@@ -632,7 +633,7 @@ function renderCal() {
       'user-select:none',
       isSel
         ? 'background:linear-gradient(135deg,#e8620a,#9b2fc9);border:1.5px solid transparent;color:#fff;cursor:pointer;box-shadow:0 0 14px rgba(232,98,10,0.6);'
-        : (!isThu || isPast)
+        : (!isThu || isPast || noQuiz)
           ? 'background:transparent;border:1.5px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.15);cursor:default;'
           : 'background:rgba(232,98,10,0.12);border:1.5px solid rgba(232,98,10,0.5);color:#e8620a;cursor:pointer;'
     ].join(';');
@@ -656,7 +657,12 @@ function renderCal() {
   }
 }
 
-function calDayClick(iso) { calSelectDate(new Date(iso + 'T12:00:00')); }
+const NO_QUIZ_DATES = ['2026-08-27','2026-12-24','2026-12-31'];
+
+function calDayClick(iso) {
+  if (NO_QUIZ_DATES.includes(iso)) return;
+  calSelectDate(new Date(iso + 'T12:00:00'));
+}
 function calPrevMonth() { calViewMonth--; if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; } renderCal(); }
 function calNextMonth() { calViewMonth++; if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; } renderCal(); }
 function selectedDate() { return calSelectedDate ? isoDate(calSelectedDate) : isoDate(nextThursday()); }
@@ -698,7 +704,7 @@ async function submitBooking() {
 
   let datesToBook = [selectedDate()];
   if (recurringEnabled) {
-    datesToBook = upcomingThursdays(52).map(d => isoDate(d)).filter(d => d >= selectedDate());
+    datesToBook = upcomingThursdays(52).map(d => isoDate(d)).filter(d => d >= selectedDate() && !NO_QUIZ_DATES.includes(d));
   }
 
   const makeBooking = date => ({
@@ -851,6 +857,18 @@ function openEditBooking(booking) {
   const dateStr = fmtDate(new Date(String(booking.date).includes('T') ? booking.date : booking.date + 'T12:00:00'));
   const titleEl = document.getElementById('manage-booking-date');
   if (titleEl) titleEl.textContent = dateStr;
+  // Show no-quiz warning if applicable
+  var noQuizWarn = document.getElementById('no-quiz-warning');
+  if (!noQuizWarn) {
+    noQuizWarn = document.createElement('div');
+    noQuizWarn.id = 'no-quiz-warning';
+    noQuizWarn.style.cssText = 'background:rgba(232,98,10,0.1);border:1.5px solid rgba(232,98,10,0.4);border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:0.75rem;color:#e8620a;text-align:center;letter-spacing:0.06em;display:none;';
+    noQuizWarn.textContent = 'There is no quiz on this Thursday — sorry!';
+    var managePanel = document.querySelector('#manage-content .panel');
+    managePanel.insertBefore(noQuizWarn, managePanel.firstChild);
+  }
+  noQuizWarn.style.display = NO_QUIZ_DATES.includes(String(booking.date).substring(0,10)) ? 'block' : 'none';
+
   document.getElementById('manage-name').value    = booking.name || '';
   document.getElementById('manage-team').value    = booking.team || '';
   document.getElementById('manage-notes').value   = booking.notes || '';
