@@ -294,11 +294,11 @@
 
         <div class="field">
           <label>Your Name <span style="color:#e8620a">*</span></label>
-          <input type="text" id="field-name" placeholder="e.g. Owen" autocomplete="off">
+          <input type="text" id="field-name" placeholder="e.g. Conor" autocomplete="off">
         </div>
         <div class="field">
           <label>Team Name <span style="color:rgba(255,255,255,0.25);font-size:0.55rem">(optional)</span></label>
-          <input type="text" id="field-team" placeholder="e.g. Quiz Khalifa" autocomplete="off">
+          <input type="text" id="field-team" placeholder="e.g. The Quiz Bois" autocomplete="off">
         </div>
         <div class="field">
           <label>No. of Players <span style="color:#e8620a">*</span></label>
@@ -693,6 +693,8 @@ async function submitBooking() {
   if (!players) { setStatus(status,'error','Please select number of players.'); return; }
   if (!time)    { setStatus(status,'error','Please select an arrival time.'); return; }
   if (!rawPh)   { setStatus(status,'error','Please enter your mobile number.'); return; }
+  const digitsOnly = rawPh.replace(/^0/,'').replace(/ /g,'');
+  if (!/^[7][0-9]{9}$/.test(digitsOnly)) { setStatus(status,'error','Please enter a valid UK mobile number (e.g. 07700 900000).'); return; }
 
   let datesToBook = [selectedDate()];
   if (recurringEnabled) {
@@ -780,6 +782,12 @@ async function lookupBooking() {
   const errEl = document.getElementById('manage-error');
   errEl.style.display = 'none';
   if (!rawPhone) return;
+  const digitsOnly2 = rawPhone.replace(/^0/,'').replace(/ /g,'');
+  if (!/^[7][0-9]{9}$/.test(digitsOnly2)) {
+    errEl.textContent = 'Please enter a valid UK mobile number (e.g. 07700 900000).';
+    errEl.style.display = 'block';
+    return;
+  }
 
   const findBtn = document.querySelector('#manage-gate .btn-primary');
   if (findBtn) { findBtn.disabled=true; findBtn.textContent='Searching…'; }
