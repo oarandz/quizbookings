@@ -310,8 +310,7 @@
             <option value="4">4 players</option>
             <option value="5">5 players</option>
             <option value="6">6 players</option>
-            <option value="7">7 players</option>
-            <option value="8">8 players</option>
+            
           </select>
         </div>
         <div class="field">
@@ -369,7 +368,7 @@
           </div>
         </div>
         <button class="btn-primary" onclick="lookupBooking()" style="max-width:320px;">FIND MY BOOKINGS</button>
-        <div id="manage-error" style="color:#ff4466;font-size:0.72rem;display:none;text-align:center;line-height:1.7;">No bookings found for that number.<br><span style="color:rgba(255,255,255,0.4);">Message the <a href="https://www.facebook.com/profile.php?id=61580497889819" target="_blank" style="color:#e8620a;text-decoration:none;">Damson Quizzes Facebook page</a> if you continue to have problems.</span></div>
+        <div id="manage-error" style="color:#ff4466;font-size:0.72rem;display:none;text-align:center;line-height:1.7;"></div>
       </div>
     </div>
 
@@ -412,8 +411,7 @@
               <option value="4">4 players</option>
               <option value="5">5 players</option>
               <option value="6">6 players</option>
-              <option value="7">7 players</option>
-              <option value="8">8 players</option>
+              
             </select>
           </div>
           <div class="field">
@@ -790,8 +788,9 @@ async function lookupBooking() {
   if (!rawPhone) return;
   const digitsOnly2 = rawPhone.replace(/^0/,'').replace(/ /g,'');
   if (!/^[7][0-9]{9}$/.test(digitsOnly2)) {
-    errEl.textContent = 'Please enter a valid UK mobile number (e.g. 07700 900000).';
+    errEl.innerHTML = 'Please enter a valid UK mobile number (e.g. 07700 900000).';
     errEl.style.display = 'block';
+    if (findBtn) { findBtn.disabled=false; findBtn.textContent='FIND MY BOOKINGS'; }
     return;
   }
 
@@ -809,6 +808,8 @@ async function lookupBooking() {
     });
 
     if (!results.length) {
+      errEl.innerHTML = 'No bookings found under that number.'
+        + '<br><span style="color:rgba(255,255,255,0.4);">Message the <a href="https://www.facebook.com/profile.php?id=61580497889819" target="_blank" style="color:#e8620a;text-decoration:none;">Damson Quizzes Facebook page</a> if you continue to have problems.</span>';
       errEl.style.display = 'block';
       if (findBtn) { findBtn.disabled=false; findBtn.textContent='FIND MY BOOKINGS'; }
       return;
@@ -817,7 +818,7 @@ async function lookupBooking() {
     if (results.length === 1) openEditBooking(results[0]);
     else showBookingList(results);
   } catch(e) {
-    errEl.textContent = 'Could not connect. Please try again.';
+    errEl.innerHTML = 'Could not connect. Please try again.';
     errEl.style.display = 'block';
     if (findBtn) { findBtn.disabled=false; findBtn.textContent='FIND MY BOOKINGS'; }
   }
