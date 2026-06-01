@@ -975,11 +975,67 @@ function lockView() {
   document.getElementById('pw-error').style.display = 'none';
 }
 
+function makeDateRow(r, list) {
+  var players = r.bookings.reduce(function(s,b){ return s+(parseInt(b.players)||0); }, 0);
+  var dateStr = fmtDate(r.date);
+  var iso     = isoDate(r.date);
+  var tables  = r.bookings.length;
+  var row = document.createElement('div');
+  row.style.cssText = 'cursor:pointer;padding:16px 20px;background:rgba(26,0,64,0.5);border:2px solid rgba(232,98,10,0.35);border-radius:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;transition:all 0.15s;';
+  row.addEventListener('click', function() { loadDateDetail(iso, dateStr); });
+  row.addEventListener('mouseover', function() { this.style.borderColor='#e8620a'; this.style.background='rgba(100,30,160,0.4)'; });
+  row.addEventListener('mouseout',  function() { this.style.borderColor='rgba(232,98,10,0.35)'; this.style.background='rgba(26,0,64,0.5)'; });
+  row.innerHTML = '<div>'
+    + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;letter-spacing:0.06em;color:#fff;text-shadow:0 0 16px rgba(232,98,10,0.4);">' + dateStr + '</div>'
+    + '<div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:2px;">' + tables + ' table' + (tables===1?'':'s') + '</div>'
+    + '</div>'
+    + '<div style="text-align:right;flex-shrink:0;">'
+      + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.6rem;color:#e8620a;line-height:1;">' + players + '</div>'
+      + '<div style="font-size:0.55rem;color:rgba(255,255,255,0.3);letter-spacing:0.15em;">PLAYERS</div>'
+    + '</div>'
+    + '<div style="color:rgba(232,98,10,0.6);font-size:1.2rem;">&#x203A;</div>';
+  list.appendChild(row);
+}
+
 async function loadAllDates() {
   if (!viewUnlocked) return;
   const list = document.getElementById('dates-list');
-  list.innerHTML = '<div class="empty-state"><span class="spinner" style="display:block;margin:0 auto 10px;"></span>Loading…</div>';
-  const thursdays = upcomingThursdays(16);
+  list.innerHTML = '<div class="empty-state"><span class="spinner" style="display:block;margin:0 auto 10px;"></span>Loading this week...</div>';
+
+  const nextThurs = upcomingThursdays(1)[0];
+  try {
+    const res  = await fetch(SCRIPT_URL + '?action=get&date=' + isoDate(nextThurs));
+    const data = await res.json();
+    const thisWeek = { date: nextThurs, bookings: data.bookings || [] };
+
+    list.innerHTML = '';
+    if (thisWeek.bookings.length > 0) {
+      makeDateRow(thisWeek, list);
+    } else {
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = '<span class="empty-icon">&#x1F37A;</span>No bookings yet for this Thursday.';
+      list.appendChild(empty);
+    }
+
+    var futureBtn = document.createElement('button');
+    futureBtn.className = 'btn-ghost';
+    futureBtn.style.cssText = 'width:100%;margin-top:12px;padding:12px;text-align:center;';
+    futureBtn.textContent = 'See future weeks';
+    futureBtn.addEventListener('click', function() {
+      futureBtn.disabled = true;
+      futureBtn.textContent = 'Loading...';
+      loadFutureWeeks(list, futureBtn);
+    });
+    list.appendChild(futureBtn);
+
+  } catch(e) {
+    list.innerHTML = '<div class="empty-state" style="color:#ff4466;"><span class="empty-icon">&#x26A0;</span>Could not load. Check script URL.</div>';
+  }
+}
+
+async function loadFutureWeeks(list, btn) {
+  const thursdays = upcomingThursdays(16).slice(1);
   try {
     const results = await Promise.all(
       thursdays.map(d =>
@@ -989,35 +1045,19 @@ async function loadAllDates() {
           .catch(() => ({ date: d, bookings: [] }))
       )
     );
-    const withBookings = results.filter(r => r.bookings.length > 0);
+    if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
+    var withBookings = results.filter(r => r.bookings.length > 0);
     if (!withBookings.length) {
-      list.innerHTML = '<div class="empty-state"><span class="empty-icon">&#x1F37A;</span>No upcoming bookings yet.</div>';
+      var none = document.createElement('div');
+      none.className = 'empty-state';
+      none.style.marginTop = '10px';
+      none.innerHTML = '<span class="empty-icon">&#x1F37A;</span>No bookings for future weeks.';
+      list.appendChild(none);
       return;
     }
-    list.innerHTML = '';
-    withBookings.forEach(function(r) {
-      var players = r.bookings.reduce(function(s,b){ return s+(parseInt(b.players)||0); }, 0);
-      var dateStr = fmtDate(r.date);
-      var iso     = isoDate(r.date);
-      var tables  = r.bookings.length;
-      var row = document.createElement('div');
-      row.style.cssText = 'cursor:pointer;padding:16px 20px;background:rgba(26,0,64,0.5);border:2px solid rgba(232,98,10,0.35);border-radius:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;transition:all 0.15s;';
-      row.addEventListener('click', function() { loadDateDetail(iso, dateStr); });
-      row.addEventListener('mouseover', function() { this.style.borderColor='#e8620a'; this.style.background='rgba(100,30,160,0.4)'; });
-      row.addEventListener('mouseout',  function() { this.style.borderColor='rgba(232,98,10,0.35)'; this.style.background='rgba(26,0,64,0.5)'; });
-      row.innerHTML = '<div>'
-        + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;letter-spacing:0.06em;color:#fff;text-shadow:0 0 16px rgba(232,98,10,0.4);">' + dateStr + '</div>'
-        + '<div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:2px;">' + tables + ' table' + (tables===1?'':'s') + '</div>'
-        + '</div>'
-        + '<div style="text-align:right;flex-shrink:0;">'
-          + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.6rem;color:#e8620a;line-height:1;">' + players + '</div>'
-          + '<div style="font-size:0.55rem;color:rgba(255,255,255,0.3);letter-spacing:0.15em;">PLAYERS</div>'
-        + '</div>'
-        + '<div style="color:rgba(232,98,10,0.6);font-size:1.2rem;">&#x203A;</div>';
-      list.appendChild(row);
-    });
+    withBookings.forEach(function(r) { makeDateRow(r, list); });
   } catch(e) {
-    list.innerHTML = '<div class="empty-state" style="color:#ff4466;"><span class="empty-icon">&#x26A0;</span>Could not load. Check script URL.</div>';
+    if (btn) { btn.disabled=false; btn.textContent='See future weeks (retry)'; }
   }
 }
 
