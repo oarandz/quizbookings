@@ -538,6 +538,12 @@ window.addEventListener('DOMContentLoaded', () => {
 // ── Date helpers ──
 function nextThursday() {
   const now = new Date();
+  // If today is Thursday and before 8pm, treat today as the upcoming quiz
+  if (now.getDay() === 4 && now.getHours() < 20) {
+    const d = new Date(now);
+    d.setHours(0,0,0,0);
+    return d;
+  }
   const diff = (4 - now.getDay() + 7) % 7 || 7;
   const d = new Date(now);
   d.setDate(d.getDate() + diff);
