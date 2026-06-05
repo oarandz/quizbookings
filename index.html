@@ -224,12 +224,21 @@
   }
   .logo-wrap img { width: clamp(364px, 84vw, 672px); filter: drop-shadow(0 0 20px rgba(232,98,10,0.4)); }
 
+  #host-tab-bookings, #host-tab-finance { font-size: 0.95rem; }
+  .fin-card { background: rgba(100,30,160,0.82); border: 2px solid rgba(232,98,10,0.5); border-radius:18px; padding:18px 22px; text-align:center; }
+  .fin-card-label { font-size:0.58rem; letter-spacing:0.25em; text-transform:uppercase; color:rgba(255,255,255,0.45); margin-bottom:6px; font-family:'DM Mono',monospace; }
+  .fin-card-value { font-family:'Bebas Neue',sans-serif; font-size:clamp(28px,5vw,48px); line-height:1; color:#fff; text-shadow:0 0 20px rgba(232,98,10,0.5); }
+  .fin-card-value.orange { color:#e8620a; }
+  .fin-card-value.green  { color:#3ddc84; text-shadow:0 0 20px rgba(61,220,132,0.4); }
+  .chart-wrap { background:rgba(100,30,160,0.82); border:2px solid rgba(232,98,10,0.35); border-radius:18px; padding:18px; margin-bottom:12px; }
+  .chart-title { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; letter-spacing:0.08em; color:rgba(255,255,255,0.6); margin-bottom:12px; }
   @media (max-width: 480px) {
     .form-grid { grid-template-columns: 1fr; }
     .span-2 { grid-column: 1; }
     .stat-row { grid-template-columns: 1fr 1fr; }
   }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 <div class="page">
@@ -454,9 +463,14 @@
 <!-- HOST VIEW OVERLAY -->
 <div id="host-overlay" style="display:none;position:fixed;inset:0;z-index:200;background:#1a0040;overflow-y:auto;padding:24px 24px 80px;">
   <div style="max-width:860px;margin:0 auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.08em;color:#fff;text-shadow:0 0 30px rgba(232,98,10,0.5);">HOST VIEW</div>
       <button onclick="toggleHostView()" style="background:none;border:2px solid rgba(232,98,10,0.4);border-radius:12px;color:rgba(255,255,255,0.5);font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;padding:8px 16px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='#e8620a';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(232,98,10,0.4)';this.style.color='rgba(255,255,255,0.5)'">&#x2715; Close</button>
+    </div>
+    <!-- Host tabs -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+      <button id="host-tab-bookings" onclick="switchHostTab('bookings')" class="tab-btn active">&#x1F4CB; Bookings</button>
+      <button id="host-tab-finance"  onclick="switchHostTab('finance')"  class="tab-btn">&#x1F4B0; Finance</button>
     </div>
 
     <!-- Password gate -->
@@ -508,6 +522,35 @@
       </div>
 
     </div>
+
+    <!-- FINANCE SECTION -->
+    <div id="finance-section" style="display:none;">
+
+      <div id="finance-gate">
+        <div class="panel" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.08em;color:#fff;text-shadow:0 0 30px rgba(232,98,10,0.5);">FINANCE ACCESS</div>
+          <div style="font-size:0.7rem;color:rgba(255,255,255,0.4);letter-spacing:0.1em;">Enter the finance password</div>
+          <div class="field" style="width:100%;max-width:280px;">
+            <input type="password" id="fin-pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkFinancePassword()" style="text-align:center;font-size:1rem;letter-spacing:0.15em;">
+          </div>
+          <button class="btn-primary" onclick="checkFinancePassword()" style="max-width:280px;">UNLOCK</button>
+          <div id="fin-pw-error" style="color:#ff4466;font-size:0.7rem;display:none;">Incorrect password</div>
+        </div>
+      </div>
+
+      <div id="finance-content" style="display:none;">
+        <div class="view-header">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.5);">Finance Dashboard</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-ghost" onclick="loadFinance()">&#x21BB; Refresh</button>
+            <button class="btn-ghost" onclick="lockFinance()" style="border-color:rgba(255,68,102,0.3);color:rgba(255,68,102,0.6);">&#x1F512; Lock</button>
+          </div>
+        </div>
+        <div id="finance-dashboard"></div>
+      </div>
+
+    </div>
+
   </div>
 </div>
 
@@ -1147,6 +1190,223 @@ async function cancelBooking(id, idx) {
 
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+
+// ── Host tab switching ──
+let financeUnlocked = false;
+let financeData = null;
+let finCharts = {};
+
+function switchHostTab(tab) {
+  document.getElementById('host-tab-bookings').classList.toggle('active', tab === 'bookings');
+  document.getElementById('host-tab-finance').classList.toggle('active', tab === 'finance');
+  document.getElementById('view-gate').style.display     = (tab === 'bookings' && !viewUnlocked)    ? 'block' : 'none';
+  document.getElementById('view-content').style.display  = (tab === 'bookings' && viewUnlocked)     ? 'block' : 'none';
+  document.getElementById('finance-section').style.display = tab === 'finance' ? 'block' : 'none';
+
+  // If switching to bookings and still locked show gate
+  if (tab === 'bookings' && !viewUnlocked) {
+    document.getElementById('view-gate').style.display = 'block';
+    document.getElementById('view-content').style.display = 'none';
+  }
+}
+
+// ── Finance password ──
+async function checkFinancePassword() {
+  const val = document.getElementById('fin-pw-input').value.trim();
+  if (!val) return;
+  const btn   = document.querySelector('#finance-gate .btn-primary');
+  const errEl = document.getElementById('fin-pw-error');
+  errEl.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Checking...';
+  try {
+    const params = new URLSearchParams({ action: 'checkFinancePassword', password: val });
+    const res  = await fetch(SCRIPT_URL + '?' + params);
+    const data = await res.json();
+    if (data.success) {
+      financeUnlocked = true;
+      document.getElementById('finance-gate').style.display    = 'none';
+      document.getElementById('finance-content').style.display = 'block';
+      loadFinance();
+    } else {
+      errEl.style.display = 'block';
+      document.getElementById('fin-pw-input').value = '';
+      document.getElementById('fin-pw-input').focus();
+    }
+  } catch(e) {
+    errEl.textContent = 'Could not connect.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'UNLOCK';
+  }
+}
+
+function lockFinance() {
+  financeUnlocked = false;
+  document.getElementById('finance-content').style.display = 'none';
+  document.getElementById('finance-gate').style.display    = 'block';
+  document.getElementById('fin-pw-input').value = '';
+  document.getElementById('fin-pw-error').style.display = 'none';
+  Object.values(finCharts).forEach(c => c.destroy());
+  finCharts = {};
+}
+
+// ── Finance data load & dashboard ──
+async function loadFinance() {
+  const dash = document.getElementById('finance-dashboard');
+  dash.innerHTML = '<div class="empty-state"><span class="spinner" style="display:block;margin:0 auto 10px;"></span>Loading finance data...</div>';
+  Object.values(finCharts).forEach(c => c.destroy());
+  finCharts = {};
+  try {
+    const params = new URLSearchParams({ action: 'getFinance', password: document.getElementById('fin-pw-input').value || '__cached__' });
+    const res  = await fetch(SCRIPT_URL + '?' + params);
+    const data = await res.json();
+    if (data.error) { dash.innerHTML = '<div class="empty-state" style="color:#ff4466;">Could not load finance data.</div>'; return; }
+    financeData = data.weeks;
+    renderFinanceDashboard(financeData);
+  } catch(e) {
+    dash.innerHTML = '<div class="empty-state" style="color:#ff4466;">Could not connect.</div>';
+  }
+}
+
+function fmtGBP(n) {
+  return '\u00a3' + (parseFloat(n)||0).toFixed(2);
+}
+
+function renderFinanceDashboard(weeks) {
+  const dash = document.getElementById('finance-dashboard');
+  const played = weeks.filter(w => w['Takings'] !== '' && w['Takings'] !== 0 && w['Takings'] !== undefined);
+
+  if (!played.length) {
+    dash.innerHTML = '<div class="empty-state"><span class="empty-icon">&#x1F4CA;</span>No finance data yet.</div>';
+    return;
+  }
+
+  // Totals
+  const totalTakings  = played.reduce((s,w) => s + (parseFloat(w['Takings'])||0), 0);
+  const totalJackpot  = played.reduce((s,w) => s + (parseFloat(w['Jackpot Winnings'])||0), 0);
+  const currentPot    = played[played.length-1]['Pot'];
+  const avgTakings    = totalTakings / played.length;
+  const avgAdded      = played.reduce((s,w) => s + (parseFloat(w['Added from split'])||0), 0) / played.length;
+  const avgPlayers    = played.reduce((s,w) => s + (parseFloat(w['Players'])||0), 0) / played.length;
+  const avgBooked     = played.reduce((s,w) => s + (parseFloat(w['Booked Players'])||0), 0) / played.length;
+
+  // Pot prediction — weeks until jackpot hit (assume jackpot is never won)
+  const weeksLeft = 10;
+  const projectedPot = (parseFloat(currentPot)||0) + (avgAdded * weeksLeft);
+
+  // Labels
+  const labels = played.map(w => {
+    const d = new Date(w['Date']);
+    return isNaN(d) ? w['Week No.'] : d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  });
+
+  dash.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+      <div class="fin-card">
+        <div class="fin-card-label">Current Pot</div>
+        <div class="fin-card-value orange">${fmtGBP(currentPot)}</div>
+      </div>
+      <div class="fin-card">
+        <div class="fin-card-label">Total Takings</div>
+        <div class="fin-card-value">${fmtGBP(totalTakings)}</div>
+      </div>
+      <div class="fin-card">
+        <div class="fin-card-label">Avg per Week</div>
+        <div class="fin-card-value">${fmtGBP(avgTakings)}</div>
+      </div>
+      <div class="fin-card">
+        <div class="fin-card-label">Jackpot Paid Out</div>
+        <div class="fin-card-value" style="color:#ff4466;">${fmtGBP(totalJackpot)}</div>
+      </div>
+      <div class="fin-card">
+        <div class="fin-card-label">Avg Players</div>
+        <div class="fin-card-value">${Math.round(avgPlayers)}</div>
+      </div>
+      <div class="fin-card">
+        <div class="fin-card-label">Pot in 10 Weeks*</div>
+        <div class="fin-card-value green">${fmtGBP(projectedPot)}</div>
+      </div>
+    </div>
+    <div style="font-size:0.58rem;color:rgba(255,255,255,0.25);letter-spacing:0.1em;margin-bottom:16px;">*Projection assumes no jackpot won and ${fmtGBP(avgAdded)}/wk added on current average</div>
+
+    <div class="chart-wrap">
+      <div class="chart-title">Takings per Week</div>
+      <canvas id="chart-takings" height="180"></canvas>
+    </div>
+
+    <div class="chart-wrap">
+      <div class="chart-title">Pot Growth</div>
+      <canvas id="chart-pot" height="180"></canvas>
+    </div>
+
+    <div class="chart-wrap">
+      <div class="chart-title">Players — Booked vs Actual</div>
+      <canvas id="chart-players" height="180"></canvas>
+    </div>
+  `;
+
+  const chartDefaults = {
+    responsive: true,
+    plugins: { legend: { labels: { color: 'rgba(255,255,255,0.5)', font: { family: 'DM Mono' } } } },
+    scales: {
+      x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { family: 'DM Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.06)' } },
+      y: { ticks: { color: 'rgba(255,255,255,0.4)', font: { family: 'DM Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.06)' } }
+    }
+  };
+
+  // Takings bar chart
+  finCharts.takings = new Chart(document.getElementById('chart-takings'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'Takings', data: played.map(w => parseFloat(w['Takings'])||0),
+        backgroundColor: 'rgba(232,98,10,0.7)', borderColor: '#e8620a', borderWidth: 1, borderRadius: 6 }]
+    },
+    options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, tooltip: { callbacks: { label: ctx => fmtGBP(ctx.parsed.y) } } } }
+  });
+
+  // Pot growth line chart + projection
+  const potVals = played.map(w => parseFloat(w['Pot'])||0);
+  const projLabels = [...labels];
+  const projVals   = [...potVals];
+  let lastPot = potVals[potVals.length-1];
+  for (let i = 1; i <= weeksLeft; i++) {
+    lastPot += avgAdded;
+    projLabels.push('+' + i + 'wk');
+    projVals.push(parseFloat(lastPot.toFixed(2)));
+  }
+
+  finCharts.pot = new Chart(document.getElementById('chart-pot'), {
+    type: 'line',
+    data: {
+      labels: projLabels,
+      datasets: [
+        { label: 'Actual Pot', data: [...potVals, ...Array(weeksLeft).fill(null)],
+          borderColor: '#e8620a', backgroundColor: 'rgba(232,98,10,0.15)', tension: 0.3, fill: true, pointRadius: 4 },
+        { label: 'Projected', data: [...Array(potVals.length-1).fill(null), ...projVals.slice(potVals.length-1)],
+          borderColor: '#3ddc84', backgroundColor: 'rgba(61,220,132,0.08)', tension: 0.3, fill: false,
+          borderDash: [6,4], pointRadius: 3 }
+      ]
+    },
+    options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, tooltip: { callbacks: { label: ctx => ctx.raw !== null ? fmtGBP(ctx.raw) : '' } } } }
+  });
+
+  // Players grouped bar
+  finCharts.players = new Chart(document.getElementById('chart-players'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Booked', data: played.map(w => parseFloat(w['Booked Players'])||0),
+          backgroundColor: 'rgba(155,47,201,0.7)', borderColor: '#9b2fc9', borderWidth: 1, borderRadius: 4 },
+        { label: 'Actual', data: played.map(w => parseFloat(w['Players'])||0),
+          backgroundColor: 'rgba(232,98,10,0.7)', borderColor: '#e8620a', borderWidth: 1, borderRadius: 4 }
+      ]
+    },
+    options: { ...chartDefaults, scales: { ...chartDefaults.scales, x: { ...chartDefaults.scales.x, stacked: false }, y: { ...chartDefaults.scales.y } } }
+  });
 }
 </script>
 </body>
