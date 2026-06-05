@@ -1283,129 +1283,133 @@ function renderFinanceDashboard(weeks) {
     return;
   }
 
-  // Totals
-  const totalTakings  = played.reduce((s,w) => s + (parseFloat(w['Takings'])||0), 0);
-  const totalJackpot  = played.reduce((s,w) => s + (parseFloat(w['Jackpot Winnings'])||0), 0);
-  const currentPot    = played[played.length-1]['Pot'];
-  const avgTakings    = totalTakings / played.length;
-  const avgAdded      = played.reduce((s,w) => s + (parseFloat(w['Added from split'])||0), 0) / played.length;
-  const avgPlayers    = played.reduce((s,w) => s + (parseFloat(w['Players'])||0), 0) / played.length;
-  const avgBooked     = played.reduce((s,w) => s + (parseFloat(w['Booked Players'])||0), 0) / played.length;
+  const totalTakings = played.reduce((s,w) => s + (parseFloat(w['Takings'])||0), 0);
+  const totalJackpot = played.reduce((s,w) => s + (parseFloat(w['Jackpot Winnings'])||0), 0);
+  const currentPot   = parseFloat(played[played.length-1]['Pot'])||0;
+  const avgTakings   = totalTakings / played.length;
+  const avgPlayers   = played.reduce((s,w) => s + (parseFloat(w['Players'])||0), 0) / played.length;
+  const avgTeams     = played.reduce((s,w) => s + (parseFloat(w['Teams'])||0), 0) / played.length;
+  const avgBooked    = played.reduce((s,w) => s + (parseFloat(w['Booked Players'])||0), 0) / played.length;
 
-  // Pot prediction — weeks until jackpot hit (assume jackpot is never won)
-  const weeksLeft = 10;
-  const projectedPot = (parseFloat(currentPot)||0) + (avgAdded * weeksLeft);
+  // Linear regression on actual pot values — accounts for jackpot wins naturally
+  const potVals = played.map(w => parseFloat(w['Pot'])||0);
+  const n = potVals.length;
+  const xMean = (n - 1) / 2;
+  const yMean = potVals.reduce((s,v) => s+v, 0) / n;
+  var num2 = 0, den2 = 0;
+  potVals.forEach(function(v,i) { num2 += (i - xMean) * (v - yMean); den2 += (i - xMean) * (i - xMean); });
+  const slope     = den2 ? num2 / den2 : 0;
+  const intercept = yMean - slope * xMean;
+  const weeksProj = 10;
 
-  // Labels
-  const labels = played.map(w => {
-    const d = new Date(w['Date']);
-    return isNaN(d) ? w['Week No.'] : d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  const labels = played.map(function(w) {
+    var d = new Date(w['Date']);
+    return isNaN(d) ? ('Wk ' + w['Week No.']) : d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
   });
 
-  dash.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
-      <div class="fin-card">
-        <div class="fin-card-label">Current Pot</div>
-        <div class="fin-card-value orange">${fmtGBP(currentPot)}</div>
-      </div>
-      <div class="fin-card">
-        <div class="fin-card-label">Total Takings</div>
-        <div class="fin-card-value">${fmtGBP(totalTakings)}</div>
-      </div>
-      <div class="fin-card">
-        <div class="fin-card-label">Avg per Week</div>
-        <div class="fin-card-value">${fmtGBP(avgTakings)}</div>
-      </div>
-      <div class="fin-card">
-        <div class="fin-card-label">Jackpot Paid Out</div>
-        <div class="fin-card-value" style="color:#ff4466;">${fmtGBP(totalJackpot)}</div>
-      </div>
-      <div class="fin-card">
-        <div class="fin-card-label">Avg Players</div>
-        <div class="fin-card-value">${Math.round(avgPlayers)}</div>
-      </div>
-      <div class="fin-card">
-        <div class="fin-card-label">Pot in 10 Weeks*</div>
-        <div class="fin-card-value green">${fmtGBP(projectedPot)}</div>
-      </div>
-    </div>
-    <div style="font-size:0.58rem;color:rgba(255,255,255,0.25);letter-spacing:0.1em;margin-bottom:16px;">*Projection assumes no jackpot won and ${fmtGBP(avgAdded)}/wk added on current average</div>
+  // Latest week
+  const latest        = played[played.length - 1];
+  const latestTeams   = parseFloat(latest['Teams'])||0;
+  const latestPlayers = parseFloat(latest['Players'])||0;
+  const latestTakings = parseFloat(latest['Takings'])||0;
+  const latestBooked  = parseFloat(latest['Booked Players'])||0;
+  const latestDate    = labels[labels.length - 1];
 
-    <div class="chart-wrap">
-      <div class="chart-title">Takings per Week</div>
-      <canvas id="chart-takings" height="180"></canvas>
-    </div>
+  function delta(val, avg, isMoney) {
+    var diff = val - avg;
+    var sign = diff >= 0 ? '+' : '-';
+    var col  = diff >= 0 ? '#3ddc84' : '#ff4466';
+    var arr  = diff >= 0 ? '&#x25B2;' : '&#x25BC;';
+    var fmt  = isMoney ? fmtGBP(Math.abs(diff)) : Math.round(Math.abs(diff));
+    return '<span style="color:' + col + ';">' + arr + ' ' + sign + fmt + ' vs avg</span>';
+  }
 
-    <div class="chart-wrap">
-      <div class="chart-title">Pot Growth</div>
-      <canvas id="chart-pot" height="180"></canvas>
-    </div>
+  const bookedDiff = latestPlayers - latestBooked;
+  const bookedCol  = bookedDiff >= 0 ? '#3ddc84' : '#ff4466';
+  const bookedArr  = bookedDiff >= 0 ? '&#x25B2;' : '&#x25BC;';
 
-    <div class="chart-wrap">
-      <div class="chart-title">Players — Booked vs Actual</div>
-      <canvas id="chart-players" height="180"></canvas>
-    </div>
-  `;
+  dash.innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">'
+    + '<div class="fin-card"><div class="fin-card-label">Current Pot</div><div class="fin-card-value orange">' + fmtGBP(currentPot) + '</div></div>'
+    + '<div class="fin-card"><div class="fin-card-label">Total Takings</div><div class="fin-card-value">' + fmtGBP(totalTakings) + '</div></div>'
+    + '<div class="fin-card"><div class="fin-card-label">Avg Takings</div><div class="fin-card-value">' + fmtGBP(avgTakings) + '</div></div>'
+    + '<div class="fin-card"><div class="fin-card-label">Jackpot Paid Out</div><div class="fin-card-value" style="color:#ff4466;">' + fmtGBP(totalJackpot) + '</div></div>'
+    + '<div class="fin-card"><div class="fin-card-label">Avg Players</div><div class="fin-card-value">' + Math.round(avgPlayers) + '</div></div>'
+    + '<div class="fin-card"><div class="fin-card-label">Avg Teams</div><div class="fin-card-value">' + Math.round(avgTeams) + '</div></div>'
+    + '</div>'
 
-  const chartDefaults = {
-    responsive: true,
-    plugins: { legend: { labels: { color: 'rgba(255,255,255,0.5)', font: { family: 'DM Mono' } } } },
-    scales: {
-      x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { family: 'DM Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.06)' } },
-      y: { ticks: { color: 'rgba(255,255,255,0.4)', font: { family: 'DM Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.06)' } }
-    }
+    + '<div class="chart-wrap" style="margin-bottom:14px;">'
+    + '<div class="chart-title">Latest Week &mdash; ' + latestDate + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+      + '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px 16px;">'
+        + '<div class="fin-card-label" style="margin-bottom:4px;">Teams</div>'
+        + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.8rem;color:#fff;">' + latestTeams + '</div>'
+        + '<div style="font-size:0.65rem;margin-top:4px;">' + delta(latestTeams, avgTeams, false) + '</div>'
+      + '</div>'
+      + '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px 16px;">'
+        + '<div class="fin-card-label" style="margin-bottom:4px;">Players</div>'
+        + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.8rem;color:#fff;">' + latestPlayers + '</div>'
+        + '<div style="font-size:0.65rem;margin-top:4px;">' + delta(latestPlayers, avgPlayers, false) + '</div>'
+      + '</div>'
+      + '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px 16px;">'
+        + '<div class="fin-card-label" style="margin-bottom:4px;">Takings</div>'
+        + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.8rem;color:#fff;">' + fmtGBP(latestTakings) + '</div>'
+        + '<div style="font-size:0.65rem;margin-top:4px;">' + delta(latestTakings, avgTakings, true) + '</div>'
+      + '</div>'
+      + '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px 16px;">'
+        + '<div class="fin-card-label" style="margin-bottom:4px;">Booked vs Walked In</div>'
+        + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.8rem;color:#fff;">' + latestBooked + ' <span style="font-size:0.9rem;color:rgba(255,255,255,0.4);">booked</span></div>'
+        + '<div style="font-size:0.65rem;margin-top:4px;color:' + bookedCol + ';">' + bookedArr + ' ' + Math.abs(bookedDiff) + ' players ' + (bookedDiff >= 0 ? 'more than booked' : 'fewer than booked') + '</div>'
+      + '</div>'
+    + '</div>'
+    + '</div>'
+
+    + '<div class="chart-wrap"><div class="chart-title">Takings per Week</div><canvas id="chart-takings" height="180"></canvas></div>'
+    + '<div class="chart-wrap"><div class="chart-title">Pot Growth &amp; Projection</div><canvas id="chart-pot" height="200"></canvas></div>'
+    + '<div style="font-size:0.58rem;color:rgba(255,255,255,0.25);letter-spacing:0.1em;margin-bottom:14px;">Projection uses linear trend of actual pot values &mdash; naturally accounts for jackpot wins</div>'
+    + '<div class="chart-wrap"><div class="chart-title">Players &mdash; Booked vs Actual</div><canvas id="chart-players" height="180"></canvas></div>';
+
+  var axisCfg = {
+    x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { family: 'DM Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.06)' } },
+    y: { ticks: { color: 'rgba(255,255,255,0.4)', font: { family: 'DM Mono', size: 10 }, callback: function(v){ return v; } }, grid: { color: 'rgba(255,255,255,0.06)' } }
   };
+  var legendCfg = { labels: { color: 'rgba(255,255,255,0.5)', font: { family: 'DM Mono' } } };
 
-  // Takings bar chart
   finCharts.takings = new Chart(document.getElementById('chart-takings'), {
     type: 'bar',
-    data: {
-      labels,
-      datasets: [{ label: 'Takings', data: played.map(w => parseFloat(w['Takings'])||0),
-        backgroundColor: 'rgba(232,98,10,0.7)', borderColor: '#e8620a', borderWidth: 1, borderRadius: 6 }]
-    },
-    options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, tooltip: { callbacks: { label: ctx => fmtGBP(ctx.parsed.y) } } } }
+    data: { labels: labels, datasets: [{ label: 'Takings', data: played.map(function(w){ return parseFloat(w['Takings'])||0; }),
+      backgroundColor: 'rgba(232,98,10,0.7)', borderColor: '#e8620a', borderWidth: 1, borderRadius: 6 }] },
+    options: { responsive: true, plugins: { legend: legendCfg, tooltip: { callbacks: { label: function(ctx){ return fmtGBP(ctx.parsed.y); } } } }, scales: axisCfg }
   });
 
-  // Pot growth line chart + projection
-  const potVals = played.map(w => parseFloat(w['Pot'])||0);
-  const projLabels = [...labels];
-  const projVals   = [...potVals];
-  let lastPot = potVals[potVals.length-1];
-  for (let i = 1; i <= weeksLeft; i++) {
-    lastPot += avgAdded;
-    projLabels.push('+' + i + 'wk');
-    projVals.push(parseFloat(lastPot.toFixed(2)));
+  // Pot chart: actual + linear projection + £150 threshold
+  var projLabels = labels.slice();
+  var bridgedProj = potVals.map(function(){ return null; });
+  bridgedProj[n-1] = potVals[n-1];
+  for (var pi = 1; pi <= weeksProj; pi++) {
+    projLabels.push('+' + pi + 'wk');
+    bridgedProj.push(parseFloat((intercept + slope * (n - 1 + pi)).toFixed(2)));
   }
+  var thresholdData = projLabels.map(function(){ return 150; });
+  var actualData = potVals.concat(new Array(weeksProj).fill(null));
 
   finCharts.pot = new Chart(document.getElementById('chart-pot'), {
     type: 'line',
-    data: {
-      labels: projLabels,
-      datasets: [
-        { label: 'Actual Pot', data: [...potVals, ...Array(weeksLeft).fill(null)],
-          borderColor: '#e8620a', backgroundColor: 'rgba(232,98,10,0.15)', tension: 0.3, fill: true, pointRadius: 4 },
-        { label: 'Projected', data: [...Array(potVals.length-1).fill(null), ...projVals.slice(potVals.length-1)],
-          borderColor: '#3ddc84', backgroundColor: 'rgba(61,220,132,0.08)', tension: 0.3, fill: false,
-          borderDash: [6,4], pointRadius: 3 }
-      ]
-    },
-    options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, tooltip: { callbacks: { label: ctx => ctx.raw !== null ? fmtGBP(ctx.raw) : '' } } } }
+    data: { labels: projLabels, datasets: [
+      { label: 'Actual Pot', data: actualData, borderColor: '#e8620a', backgroundColor: 'rgba(232,98,10,0.15)', tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: '#e8620a' },
+      { label: 'Projected',  data: bridgedProj, borderColor: '#3ddc84', backgroundColor: 'rgba(61,220,132,0.06)', tension: 0.3, fill: false, borderDash: [6,4], pointRadius: 3, pointBackgroundColor: '#3ddc84' },
+      { label: '\u00a3150 Min', data: thresholdData, borderColor: '#ff4466', borderWidth: 2, borderDash: [4,3], pointRadius: 0, fill: false, tension: 0 }
+    ]},
+    options: { responsive: true, plugins: { legend: legendCfg, tooltip: { callbacks: { label: function(ctx){ return ctx.raw !== null ? (ctx.dataset.label + ': ' + fmtGBP(ctx.raw)) : ''; } } } }, scales: axisCfg }
   });
 
-  // Players grouped bar
   finCharts.players = new Chart(document.getElementById('chart-players'), {
     type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Booked', data: played.map(w => parseFloat(w['Booked Players'])||0),
-          backgroundColor: 'rgba(155,47,201,0.7)', borderColor: '#9b2fc9', borderWidth: 1, borderRadius: 4 },
-        { label: 'Actual', data: played.map(w => parseFloat(w['Players'])||0),
-          backgroundColor: 'rgba(232,98,10,0.7)', borderColor: '#e8620a', borderWidth: 1, borderRadius: 4 }
-      ]
-    },
-    options: { ...chartDefaults, scales: { ...chartDefaults.scales, x: { ...chartDefaults.scales.x, stacked: false }, y: { ...chartDefaults.scales.y } } }
+    data: { labels: labels, datasets: [
+      { label: 'Booked', data: played.map(function(w){ return parseFloat(w['Booked Players'])||0; }), backgroundColor: 'rgba(155,47,201,0.7)', borderColor: '#9b2fc9', borderWidth: 1, borderRadius: 4 },
+      { label: 'Actual',  data: played.map(function(w){ return parseFloat(w['Players'])||0; }),        backgroundColor: 'rgba(232,98,10,0.7)',  borderColor: '#e8620a', borderWidth: 1, borderRadius: 4 }
+    ]},
+    options: { responsive: true, plugins: { legend: legendCfg }, scales: axisCfg }
   });
 }
 </script>
