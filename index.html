@@ -517,7 +517,6 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbrpYr6sfzJ8hD_elEbJP7ZDybLhPlTDm_3iSQ4a_C5h7hr1C9WpuGiDqYr76a-zdy-A/exec';
 let bookings = [];
 let demoMode = false;
-const QUIZ_PASSWORD = 'woodsmanquiz';
 let viewUnlocked = false;
 let recurringEnabled = false;
 let calViewYear, calViewMonth, calSelectedDate;
@@ -959,17 +958,34 @@ function toggleHostView() {
   if (!isOpen && viewUnlocked) loadAllDates();
 }
 
-function checkPassword() {
-  const val = document.getElementById('pw-input').value;
-  if (val === QUIZ_PASSWORD) {
-    viewUnlocked = true;
-    document.getElementById('view-gate').style.display    = 'none';
-    document.getElementById('view-content').style.display = 'block';
-    loadAllDates();
-  } else {
-    document.getElementById('pw-error').style.display = 'block';
-    document.getElementById('pw-input').value = '';
-    document.getElementById('pw-input').focus();
+async function checkPassword() {
+  const val = document.getElementById('pw-input').value.trim();
+  if (!val) return;
+  const btn = document.querySelector('#view-gate .btn-primary');
+  const errEl = document.getElementById('pw-error');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+  try {
+    const params = new URLSearchParams({ action: 'checkPassword', password: val });
+    const res  = await fetch(SCRIPT_URL + '?' + params);
+    const data = await res.json();
+    if (data.success) {
+      viewUnlocked = true;
+      document.getElementById('view-gate').style.display    = 'none';
+      document.getElementById('view-content').style.display = 'block';
+      loadAllDates();
+    } else {
+      errEl.style.display = 'block';
+      document.getElementById('pw-input').value = '';
+      document.getElementById('pw-input').focus();
+    }
+  } catch(e) {
+    errEl.textContent = 'Could not connect. Please try again.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'UNLOCK';
   }
 }
 
