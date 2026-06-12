@@ -1242,6 +1242,7 @@ function esc(s) {
 let financeUnlocked = false;
 let financeData = null;
 let finCharts = {};
+let financePw = '';
 
 function switchHostTab(tab) {
   document.getElementById('host-tab-bookings').classList.toggle('active', tab === 'bookings');
@@ -1271,6 +1272,7 @@ async function checkFinancePassword() {
     const data = await res.json();
     if (data.success) {
       financeUnlocked = true;
+      financePw = val;
       document.getElementById('finance-gate').style.display    = 'none';
       document.getElementById('finance-content').style.display = 'block';
       loadFinance();
@@ -1289,6 +1291,7 @@ async function checkFinancePassword() {
 
 function lockFinance() {
   financeUnlocked = false;
+  financePw = '';
   document.getElementById('finance-content').style.display = 'none';
   document.getElementById('finance-gate').style.display    = 'block';
   document.getElementById('fin-pw-input').value = '';
@@ -1304,7 +1307,7 @@ async function loadFinance() {
   Object.values(finCharts).forEach(c => c.destroy());
   finCharts = {};
   try {
-    const params = new URLSearchParams({ action: 'getFinance', password: document.getElementById('fin-pw-input').value || '__cached__' });
+    const params = new URLSearchParams({ action: 'getFinance', password: financePw });
     const res  = await fetch(SCRIPT_URL + '?' + params);
     const data = await res.json();
     if (data.error) { dash.innerHTML = '<div class="empty-state" style="color:#ff4466;">Could not load finance data.</div>'; return; }
@@ -1479,7 +1482,7 @@ function renderFinanceDashboard(weeks) {
   // Load pending expense total into Pay Fund card
   (async function() {
     try {
-      var params = new URLSearchParams({ action: 'getExpenses', password: document.getElementById('fin-pw-input').value });
+      var params = new URLSearchParams({ action: 'getExpenses', password: financePw });
       var res  = await fetch(SCRIPT_URL + '?' + params);
       var data = await res.json();
       var el   = document.getElementById('payfund-pending');
@@ -1534,7 +1537,7 @@ async function submitExpense() {
   try {
     var params = new URLSearchParams({
       action: 'addExpense',
-      password: document.getElementById('fin-pw-input').value,
+      password: financePw,
       name: name, title: title, description: desc,
       amount: amount.toFixed(2),
       timestamp: new Date().toISOString()
@@ -1562,7 +1565,7 @@ async function loadExpenses() {
   var el = document.getElementById('expense-list-content');
   el.innerHTML = '<div class="empty-state"><span class="spinner" style="display:block;margin:0 auto 10px;"></span>Loading…</div>';
   try {
-    var params = new URLSearchParams({ action: 'getExpenses', password: document.getElementById('fin-pw-input').value });
+    var params = new URLSearchParams({ action: 'getExpenses', password: financePw });
     var res  = await fetch(SCRIPT_URL + '?' + params);
     var data = await res.json();
     if (!data.expenses || !data.expenses.length) {
@@ -1614,7 +1617,7 @@ function expenseRow(exp, i, isPaid) {
 
 async function markExpensePaid(id) {
   try {
-    var params = new URLSearchParams({ action: 'markExpensePaid', password: document.getElementById('fin-pw-input').value, id: id });
+    var params = new URLSearchParams({ action: 'markExpensePaid', password: financePw, id: id });
     var res  = await fetch(SCRIPT_URL + '?' + params);
     var data = await res.json();
     if (data.success) { loadExpenses(); loadFinance(); }
