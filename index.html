@@ -541,11 +541,56 @@
       <div id="finance-content" style="display:none;">
         <div class="view-header">
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.5);">Finance Dashboard</div>
-          <div style="display:flex;gap:8px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-ghost" onclick="showExpenseForm()">&#x2795; Claim</button>
+            <button class="btn-ghost" onclick="showExpenseList()">&#x1F4CB; Expenses</button>
             <button class="btn-ghost" onclick="loadFinance()">&#x21BB; Refresh</button>
             <button class="btn-ghost" onclick="lockFinance()" style="border-color:rgba(255,68,102,0.3);color:rgba(255,68,102,0.6);">&#x1F512; Lock</button>
           </div>
         </div>
+
+        <!-- Expense claim form (hidden by default) -->
+        <div id="expense-form-panel" style="display:none;margin-bottom:14px;">
+          <div class="panel" style="border-color:rgba(155,47,201,0.6);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:0.08em;color:#fff;">Submit Expense Claim</div>
+              <button class="btn-ghost" onclick="hideExpenseForm()">&#x2715; Cancel</button>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label>Your Name <span style="color:#e8620a">*</span></label>
+                <input type="text" id="exp-name" placeholder="e.g. Owen" autocomplete="off">
+              </div>
+              <div class="field">
+                <label>Amount (£) <span style="color:#e8620a">*</span></label>
+                <input type="number" id="exp-amount" placeholder="e.g. 12.50" min="0" step="0.01">
+              </div>
+              <div class="field span-2">
+                <label>Title <span style="color:#e8620a">*</span></label>
+                <input type="text" id="exp-title" placeholder="e.g. Quiz sheets printing" autocomplete="off">
+              </div>
+              <div class="field span-2">
+                <label>Description <span style="color:rgba(255,255,255,0.25);font-size:0.55rem">(optional)</span></label>
+                <textarea id="exp-desc" placeholder="Any extra detail..." style="min-height:60px;"></textarea>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <button class="btn-primary" onclick="submitExpense()">SUBMIT CLAIM</button>
+            <div class="status-bar" id="expense-status"></div>
+          </div>
+        </div>
+
+        <!-- Expense list (hidden by default) -->
+        <div id="expense-list-panel" style="display:none;margin-bottom:14px;">
+          <div class="panel" style="border-color:rgba(155,47,201,0.6);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:0.08em;color:#fff;">Expense Claims</div>
+              <button class="btn-ghost" onclick="hideExpenseList()">&#x2715; Close</button>
+            </div>
+            <div id="expense-list-content"></div>
+          </div>
+        </div>
+
         <div id="finance-dashboard"></div>
       </div>
 
@@ -1340,7 +1385,7 @@ function renderFinanceDashboard(weeks) {
     // ── Summary cards ──
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">'
     + '<div class="fin-card"><div class="fin-card-label">Total in Case</div><div class="fin-card-value orange">' + fmtGBP(totalInCase) + '</div></div>'
-    + '<div class="fin-card"><div class="fin-card-label">Pay Fund</div><div class="fin-card-value" style="color:#9b2fc9;">' + fmtGBP(payFund) + '</div></div>'
+    + '<div class="fin-card" id="payfund-card"><div class="fin-card-label">Pay Fund</div><div class="fin-card-value" style="color:#9b2fc9;">' + fmtGBP(payFund) + '</div><div id="payfund-pending" style="font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:4px;letter-spacing:0.08em;">loading claims…</div></div>'
     + '<div class="fin-card"><div class="fin-card-label">Giveaway Pot</div><div class="fin-card-value green">' + fmtGBP(giveawayPot) + '</div></div>'
     + '<div class="fin-card"><div class="fin-card-label">Total Takings</div><div class="fin-card-value">' + fmtGBP(totalTakings) + '</div></div>'
     + '<div class="fin-card"><div class="fin-card-label">Avg Takings</div><div class="fin-card-value">' + fmtGBP(avgTakings) + '</div></div>'
@@ -1430,6 +1475,153 @@ function renderFinanceDashboard(weeks) {
     ]},
     options: { responsive: true, plugins: { legend: legendCfg }, scales: axisCfg }
   });
+
+  // Load pending expense total into Pay Fund card
+  (async function() {
+    try {
+      var params = new URLSearchParams({ action: 'getExpenses', password: document.getElementById('fin-pw-input').value });
+      var res  = await fetch(SCRIPT_URL + '?' + params);
+      var data = await res.json();
+      var el   = document.getElementById('payfund-pending');
+      if (!el) return;
+      if (data.expenses) {
+        var pending = data.expenses.filter(function(e){ return !e.paid || e.paid === 'FALSE' || e.paid === false || e.paid === ''; });
+        var pendingTotal = pending.reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
+        el.innerHTML = pendingTotal > 0
+          ? '<span style="color:#ff9944;">&#x26A0; ' + fmtGBP(pendingTotal) + ' pending claims</span>'
+          : '<span style="color:rgba(61,220,132,0.6);">&#x2713; No pending claims</span>';
+      } else {
+        el.textContent = '';
+      }
+    } catch(e) {
+      var el2 = document.getElementById('payfund-pending');
+      if (el2) el2.textContent = '';
+    }
+  })();
+}
+
+// ── Expenses ──
+function showExpenseForm() {
+  document.getElementById('expense-form-panel').style.display = 'block';
+  document.getElementById('expense-list-panel').style.display = 'none';
+}
+function hideExpenseForm() {
+  document.getElementById('expense-form-panel').style.display = 'none';
+  document.getElementById('expense-status').className = 'status-bar';
+}
+function showExpenseList() {
+  document.getElementById('expense-list-panel').style.display = 'block';
+  document.getElementById('expense-form-panel').style.display = 'none';
+  loadExpenses();
+}
+function hideExpenseList() {
+  document.getElementById('expense-list-panel').style.display = 'none';
+}
+
+async function submitExpense() {
+  var name   = document.getElementById('exp-name').value.trim();
+  var title  = document.getElementById('exp-title').value.trim();
+  var desc   = document.getElementById('exp-desc').value.trim();
+  var amount = parseFloat(document.getElementById('exp-amount').value);
+  var status = document.getElementById('expense-status');
+  if (!name)       { setStatus(status,'error','Please enter your name.'); return; }
+  if (!title)      { setStatus(status,'error','Please enter a title.'); return; }
+  if (!amount || amount <= 0) { setStatus(status,'error','Please enter a valid amount.'); return; }
+
+  var btn = document.querySelector('#expense-form-panel .btn-primary');
+  btn.disabled = true;
+  setStatus(status,'loading','Submitting claim…');
+  try {
+    var params = new URLSearchParams({
+      action: 'addExpense',
+      password: document.getElementById('fin-pw-input').value,
+      name: name, title: title, description: desc,
+      amount: amount.toFixed(2),
+      timestamp: new Date().toISOString()
+    });
+    var res  = await fetch(SCRIPT_URL + '?' + params);
+    var data = await res.json();
+    if (data.success) {
+      setStatus(status,'success','✓ Claim submitted!');
+      document.getElementById('exp-name').value   = '';
+      document.getElementById('exp-title').value  = '';
+      document.getElementById('exp-desc').value   = '';
+      document.getElementById('exp-amount').value = '';
+      loadFinance(); // refresh dashboard to update pending total
+    } else {
+      setStatus(status,'error','Could not submit. Please try again.');
+    }
+  } catch(e) {
+    setStatus(status,'error','Could not connect.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function loadExpenses() {
+  var el = document.getElementById('expense-list-content');
+  el.innerHTML = '<div class="empty-state"><span class="spinner" style="display:block;margin:0 auto 10px;"></span>Loading…</div>';
+  try {
+    var params = new URLSearchParams({ action: 'getExpenses', password: document.getElementById('fin-pw-input').value });
+    var res  = await fetch(SCRIPT_URL + '?' + params);
+    var data = await res.json();
+    if (!data.expenses || !data.expenses.length) {
+      el.innerHTML = '<div class="empty-state"><span class="empty-icon">&#x1F4CB;</span>No expense claims yet.</div>';
+      return;
+    }
+    renderExpenseList(data.expenses);
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state" style="color:#ff4466;">Could not load expenses.</div>';
+  }
+}
+
+function renderExpenseList(expenses) {
+  var el = document.getElementById('expense-list-content');
+  var pending = expenses.filter(function(e){ return !e.paid || e.paid === 'FALSE' || e.paid === false || e.paid === ''; });
+  var paid    = expenses.filter(function(e){ return e.paid === 'TRUE' || e.paid === true; });
+  var pendingTotal = pending.reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
+
+  var html = '<div style="font-size:0.65rem;color:rgba(255,255,255,0.4);letter-spacing:0.1em;margin-bottom:10px;">'
+    + pending.length + ' pending &mdash; ' + fmtGBP(pendingTotal) + ' awaiting payment</div>';
+
+  if (pending.length) {
+    html += '<div style="font-family:Bebas Neue,sans-serif;font-size:0.9rem;letter-spacing:0.1em;color:#e8620a;margin-bottom:6px;">PENDING</div>';
+    html += pending.map(function(exp, i) { return expenseRow(exp, i, false); }).join('');
+  }
+  if (paid.length) {
+    html += '<div style="font-family:Bebas Neue,sans-serif;font-size:0.9rem;letter-spacing:0.1em;color:rgba(255,255,255,0.3);margin:14px 0 6px;">PAID</div>';
+    html += paid.map(function(exp, i) { return expenseRow(exp, i, true); }).join('');
+  }
+  el.innerHTML = html;
+}
+
+function expenseRow(exp, i, isPaid) {
+  var date = exp.timestamp ? new Date(exp.timestamp).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}) : '';
+  return '<div style="padding:14px 16px;background:rgba(26,0,64,0.5);border:1.5px solid ' + (isPaid ? 'rgba(255,255,255,0.08)' : 'rgba(155,47,201,0.4)') + ';border-radius:12px;margin-bottom:8px;opacity:' + (isPaid ? '0.5' : '1') + ';">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
+      + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:0.85rem;color:#fff;font-weight:500;">' + esc(exp.title) + '</div>'
+        + '<div style="font-size:0.65rem;color:rgba(255,255,255,0.4);margin-top:2px;">' + esc(exp.name) + (date ? ' &mdash; ' + date : '') + '</div>'
+        + (exp.description ? '<div style="font-size:0.65rem;color:rgba(255,255,255,0.3);margin-top:4px;font-style:italic;">' + esc(exp.description) + '</div>' : '')
+      + '</div>'
+      + '<div style="text-align:right;flex-shrink:0;">'
+        + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;color:' + (isPaid ? 'rgba(255,255,255,0.3)' : '#9b2fc9') + ';">' + fmtGBP(parseFloat(exp.amount)||0) + '</div>'
+        + (!isPaid ? '<button onclick="markExpensePaid(' + JSON.stringify(exp.id) + ')" style="margin-top:6px;background:rgba(61,220,132,0.15);border:1.5px solid rgba(61,220,132,0.4);border-radius:8px;color:#3ddc84;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;padding:4px 10px;cursor:pointer;">Mark Paid</button>' : '<div style="font-size:0.6rem;color:rgba(61,220,132,0.5);margin-top:4px;">&#x2713; Paid</div>')
+      + '</div>'
+    + '</div>'
+  + '</div>';
+}
+
+async function markExpensePaid(id) {
+  try {
+    var params = new URLSearchParams({ action: 'markExpensePaid', password: document.getElementById('fin-pw-input').value, id: id });
+    var res  = await fetch(SCRIPT_URL + '?' + params);
+    var data = await res.json();
+    if (data.success) { loadExpenses(); loadFinance(); }
+    else alert('Could not mark as paid.');
+  } catch(e) {
+    alert('Could not connect.');
+  }
 }
 </script>
 </body>
