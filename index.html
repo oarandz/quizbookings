@@ -1307,12 +1307,20 @@ async function loadFinance() {
   Object.values(finCharts).forEach(c => c.destroy());
   finCharts = {};
   try {
-    const params = new URLSearchParams({ action: 'getFinance', password: financePw });
-    const res  = await fetch(SCRIPT_URL + '?' + params);
-    const data = await res.json();
-    if (data.error) { dash.innerHTML = '<div class="empty-state" style="color:#ff4466;">Could not load finance data.</div>'; return; }
-    financeData = data.weeks;
-    renderFinanceDashboard(financeData);
+    const [finRes, expRes] = await Promise.all([
+      fetch(SCRIPT_URL + '?' + new URLSearchParams({ action: 'getFinance',   password: financePw })),
+      fetch(SCRIPT_URL + '?' + new URLSearchParams({ action: 'getExpenses',  password: financePw }))
+    ]);
+    const finData = await finRes.json();
+    const expData = await expRes.json();
+    if (finData.error) { dash.innerHTML = '<div class="empty-state" style="color:#ff4466;">Could not load finance data.</div>'; return; }
+    financeData = finData.weeks;
+    const expenses = expData.expenses || [];
+    const paidTotal   = expenses.filter(function(e){ return e.paid === true || e.paid === 'TRUE'; })
+                                .reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
+    const pendingTotal = expenses.filter(function(e){ return !e.paid || e.paid === false || e.paid === 'FALSE' || e.paid === ''; })
+                                 .reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
+    renderFinanceDashboard(financeData, paidTotal, pendingTotal);
   } catch(e) {
     dash.innerHTML = '<div class="empty-state" style="color:#ff4466;">Could not connect.</div>';
   }
@@ -1322,7 +1330,9 @@ function fmtGBP(n) {
   return '\u00a3' + (parseFloat(n)||0).toFixed(2);
 }
 
-function renderFinanceDashboard(weeks) {
+function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses) {
+  paidExpenses    = paidExpenses    || 0;
+  pendingExpenses = pendingExpenses || 0;
   const dash = document.getElementById('finance-dashboard');
   const played = weeks.filter(w => w['Takings'] !== '' && w['Takings'] !== 0 && w['Takings'] !== undefined);
 
@@ -1338,9 +1348,12 @@ function renderFinanceDashboard(weeks) {
   const avgTeams      = played.reduce((s,w) => s + (parseFloat(w['Teams'])||0), 0) / played.length;
 
   // Three pot numbers
-  const totalInCase   = parseFloat(played[played.length-1]['Pot'])||0;
-  const payFund       = played.reduce((s,w) => s + (parseFloat(w['Added from split'])||0), 0);
-  const giveawayPot   = totalInCase - payFund;
+  const rawPot        = parseFloat(played[played.length-1]['Pot'])||0;
+  const rawPayFund    = played.reduce((s,w) => s + (parseFloat(w['Added from split'])||0), 0);
+  // Paid expenses have been physically removed from the case — subtract from both totals
+  const totalInCase   = rawPot     - paidExpenses;
+  const payFund       = rawPayFund - paidExpenses;
+  const giveawayPot   = totalInCase - payFund; // unaffected — paid expenses cancel out
 
   // Linear regression on giveaway pot over time for projection
   const giveawayVals = played.map(function(w, i) {
@@ -1388,7 +1401,9 @@ function renderFinanceDashboard(weeks) {
     // ── Summary cards ──
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">'
     + '<div class="fin-card"><div class="fin-card-label">Total in Case</div><div class="fin-card-value orange">' + fmtGBP(totalInCase) + '</div></div>'
-    + '<div class="fin-card" id="payfund-card"><div class="fin-card-label">Pay Fund</div><div class="fin-card-value" style="color:#9b2fc9;">' + fmtGBP(payFund) + '</div><div id="payfund-pending" style="font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:4px;letter-spacing:0.08em;">loading claims…</div></div>'
+    + '<div class="fin-card"><div class="fin-card-label">Pay Fund</div><div class="fin-card-value" style="color:#9b2fc9;">' + fmtGBP(payFund) + '</div>'
+    + (pendingExpenses > 0 ? '<div style="font-size:0.6rem;color:#ff9944;margin-top:4px;">&#x26A0; ' + fmtGBP(pendingExpenses) + ' pending</div>' : '<div style="font-size:0.6rem;color:rgba(61,220,132,0.6);margin-top:4px;">&#x2713; No pending claims</div>')
+    + '</div>'
     + '<div class="fin-card"><div class="fin-card-label">Giveaway Pot</div><div class="fin-card-value green">' + fmtGBP(giveawayPot) + '</div></div>'
     + '<div class="fin-card"><div class="fin-card-label">Total Takings</div><div class="fin-card-value">' + fmtGBP(totalTakings) + '</div></div>'
     + '<div class="fin-card"><div class="fin-card-label">Avg Takings</div><div class="fin-card-value">' + fmtGBP(avgTakings) + '</div></div>'
@@ -1479,28 +1494,6 @@ function renderFinanceDashboard(weeks) {
     options: { responsive: true, plugins: { legend: legendCfg }, scales: axisCfg }
   });
 
-  // Load pending expense total into Pay Fund card
-  (async function() {
-    try {
-      var params = new URLSearchParams({ action: 'getExpenses', password: financePw });
-      var res  = await fetch(SCRIPT_URL + '?' + params);
-      var data = await res.json();
-      var el   = document.getElementById('payfund-pending');
-      if (!el) return;
-      if (data.expenses) {
-        var pending = data.expenses.filter(function(e){ return !e.paid || e.paid === 'FALSE' || e.paid === false || e.paid === ''; });
-        var pendingTotal = pending.reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
-        el.innerHTML = pendingTotal > 0
-          ? '<span style="color:#ff9944;">&#x26A0; ' + fmtGBP(pendingTotal) + ' pending claims</span>'
-          : '<span style="color:rgba(61,220,132,0.6);">&#x2713; No pending claims</span>';
-      } else {
-        el.textContent = '';
-      }
-    } catch(e) {
-      var el2 = document.getElementById('payfund-pending');
-      if (el2) el2.textContent = '';
-    }
-  })();
 }
 
 // ── Expenses ──
