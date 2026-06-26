@@ -1391,7 +1391,8 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
   // ── Coming week prediction ──
   const bookedPlayers = upcomingBookings.reduce(function(s,b){ return s+(parseInt(b.players)||0); }, 0);
   const bookedTeams   = upcomingBookings.length;
-  const predictedPlayers = Math.round(bookedPlayers * (1 - (noShowRate||0)) + (avgPlayers - avgBooked) * (1 - (noShowRate||0)));
+  const avgWalkIns = Math.max(0, avgPlayers - avgBooked); // historical walk-in average per week
+  const predictedPlayers = Math.round(bookedPlayers * (1 - (noShowRate||0)) + avgWalkIns);
   const predictedTakings = predictedPlayers * takingsPerPlayer;
   const showRate = Math.round((1-(noShowRate||0))*100);
 
@@ -1487,13 +1488,38 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
     + '<div style="font-family:Bebas Neue,sans-serif;font-size:2rem;color:#3ddc84;line-height:1;">'+fmtGBP(predictedTakings||avgTakings)+'</div>'
     + '<div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:4px;">'+fmtGBP(takingsPerPlayer)+'/player avg</div>'
     + '</div>';
-  html += '<div style="background:rgba(100,30,160,0.4);border-radius:12px;padding:14px;">'
-    + '<div class="fin-card-label" style="margin-bottom:4px;">Bookings Close</div>'
-    + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.4rem;color:#fff;line-height:1.2;">8PM<br>TONIGHT</div>'
-    + '<div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:4px;">walk-ins add ~'+Math.round(avgPlayers - avgBooked)+' players</div>'
-    + '</div>';
+  (function(){
+    var now = new Date();
+    // Quiz is 7:30pm on the next Thursday
+    var quiz = new Date(now);
+    var day = quiz.getDay(); // 0=Sun,4=Thu
+    var daysUntil = (4 - day + 7) % 7;
+    if (daysUntil === 0 && (quiz.getHours() > 19 || (quiz.getHours() === 19 && quiz.getMinutes() >= 30))) {
+      daysUntil = 7; // quiz already started today, next week
+    }
+    quiz.setDate(quiz.getDate() + daysUntil);
+    quiz.setHours(19, 30, 0, 0);
+    var diffMs = quiz - now;
+    var diffH = Math.floor(diffMs / 3600000);
+    var diffM = Math.floor((diffMs % 3600000) / 60000);
+    var diffD = Math.floor(diffH / 24);
+    var remH = diffH % 24;
+    var countdown, sub;
+    if (diffMs <= 0) {
+      countdown = 'LIVE NOW'; sub = 'quiz is on!';
+    } else if (diffD > 0) {
+      countdown = diffD + 'd ' + remH + 'h'; sub = diffM + 'm until kick-off';
+    } else {
+      countdown = diffH + 'h ' + diffM + 'm'; sub = 'until quiz starts';
+    }
+    html += '<div id="quiz-countdown" data-quiz="'+quiz.toISOString()+'" style="background:rgba(100,30,160,0.4);border-radius:12px;padding:14px;">'
+      + '<div class="fin-card-label" style="margin-bottom:4px;">Quiz Countdown</div>'
+      + '<div id="countdown-val" style="font-family:Bebas Neue,sans-serif;font-size:1.6rem;color:#e8620a;line-height:1.1;">'+countdown+'</div>'
+      + '<div id="countdown-sub" style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:4px;">'+sub+'</div>'
+      + '</div>';
+  })();
   html += '</div>';
-  html += '<div style="font-size:0.55rem;color:rgba(255,255,255,0.2);letter-spacing:0.06em;margin-top:10px;">Prediction based on '+played.length+' weeks of data &mdash; walk-in average added to booked total after no-show adjustment</div>';
+  html += '<div style="font-size:0.55rem;color:rgba(255,255,255,0.2);letter-spacing:0.06em;margin-top:10px;">Prediction: booked &times; show rate + avg walk-ins (~'+Math.round(avgWalkIns)+'/wk). Based on '+played.length+' weeks of data.</div>';
   html += '</div>';
 
   // LATEST WEEK
@@ -1599,6 +1625,30 @@ function showExpenseForm() {
   document.getElementById('expense-form-panel').style.display = 'block';
   document.getElementById('expense-list-panel').style.display = 'none';
 }
+
+  // ── Live countdown ticker ──
+  (function startCountdown() {
+    var el = document.getElementById('quiz-countdown');
+    if (!el) return;
+    var quizTime = new Date(el.getAttribute('data-quiz'));
+    function tick() {
+      var now = new Date();
+      var diff = quizTime - now;
+      var valEl = document.getElementById('countdown-val');
+      var subEl = document.getElementById('countdown-sub');
+      if (!valEl) return;
+      if (diff <= 0) { valEl.textContent = 'LIVE NOW'; subEl.textContent = 'quiz is on!'; return; }
+      var h = Math.floor(diff / 3600000);
+      var m = Math.floor((diff % 3600000) / 60000);
+      var s = Math.floor((diff % 60000) / 1000);
+      var d = Math.floor(h / 24); var rh = h % 24;
+      if (d > 0) { valEl.textContent = d+'d '+rh+'h'; subEl.textContent = m+'m until kick-off'; }
+      else { valEl.textContent = h+'h '+m+'m'; subEl.textContent = s+'s until quiz starts'; }
+      setTimeout(tick, 1000);
+    }
+    tick();
+  })();
+
 function hideExpenseForm() {
   document.getElementById('expense-form-panel').style.display = 'none';
   document.getElementById('expense-status').className = 'status-bar';
