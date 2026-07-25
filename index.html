@@ -518,6 +518,30 @@
             <div class="stat-value orange" id="stat-players-view">&mdash;</div>
           </div>
         </div>
+
+        <!-- Reserved signs printing -->
+        <div style="background:rgba(26,0,64,0.5);border:1px solid rgba(232,98,10,0.25);border-radius:14px;padding:14px 16px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:0.1em;color:#fff;">&#x1F5A8; RESERVED TABLE SIGNS</div>
+              <div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:3px;">A5 signs, 2 per page &mdash; one for each booked table</div>
+            </div>
+            <button class="btn-ghost" id="signs-toggle" style="white-space:nowrap;">Set up signs</button>
+          </div>
+          <div id="signs-panel" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:150px;">
+                <label style="display:block;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:6px;">Extra blank signs</label>
+                <input type="number" id="signs-generic" value="0" min="0" max="40"
+                  style="width:100%;padding:10px 12px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-family:'DM Mono',monospace;font-size:0.95rem;">
+                <div style="font-size:0.58rem;color:rgba(255,255,255,0.28);margin-top:5px;">Generic &ldquo;Reserved for the Quiz&rdquo; signs for walk-ins</div>
+              </div>
+              <button class="btn-primary" id="signs-print" style="white-space:nowrap;padding:12px 20px;">&#x1F5A8; Print Signs</button>
+            </div>
+            <div id="signs-count" style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:10px;"></div>
+          </div>
+        </div>
+
         <div id="bookings-list"></div>
       </div>
 
@@ -1171,10 +1195,19 @@ async function loadFutureWeeks(list, btn) {
   }
 }
 
+var currentDetailDateLabel = '';
+var currentDetailIso = '';
+
 async function loadDateDetail(iso, dateStr) {
+  currentDetailIso = iso;
+  currentDetailDateLabel = dateStr;
   document.getElementById('view-dates').style.display  = 'none';
   document.getElementById('view-detail').style.display = 'block';
   document.getElementById('view-date-label').textContent = dateStr;
+  var sp = document.getElementById('signs-panel');
+  if (sp) sp.style.display = 'none';
+  var st = document.getElementById('signs-toggle');
+  if (st) st.textContent = 'Set up signs';
   document.getElementById('bookings-list').innerHTML =
     '<div class="empty-state"><span class="spinner" style="display:block;margin:0 auto 10px;"></span>Loading…</div>';
   document.getElementById('stat-players-view').textContent = '—';
@@ -1220,6 +1253,114 @@ function renderAll() {
       + '</div>';
     list.appendChild(row);
   });
+  updateSignsCount();
+}
+
+// ── Reserved table signs ──
+function updateSignsCount() {
+  var el = document.getElementById('signs-count');
+  if (!el) return;
+  var generic = parseInt((document.getElementById('signs-generic')||{}).value) || 0;
+  var total = bookings.length + generic;
+  var pages = Math.ceil(total / 2);
+  el.textContent = bookings.length + ' booked table' + (bookings.length===1?'':'s')
+    + (generic > 0 ? ' + ' + generic + ' blank' : '')
+    + ' = ' + total + ' sign' + (total===1?'':'s') + ' over ' + pages + ' page' + (pages===1?'':'s') + '.';
+}
+
+function getLogoSrc() {
+  var img = document.querySelector('.logo-wrap img');
+  return img ? img.src : '';
+}
+
+function printReservedSigns() {
+  var generic = parseInt(document.getElementById('signs-generic').value) || 0;
+  if (generic < 0) generic = 0;
+  if (generic > 40) generic = 40;
+
+  var signs = [];
+  bookings.forEach(function(b) {
+    var team = (b.team || '').trim();
+    var name = (b.name || '').trim();
+    if (team) {
+      signs.push({ big: team, small: 'Booked by ' + name, players: b.players, time: b.time });
+    } else {
+      signs.push({ big: name, small: '', players: b.players, time: b.time });
+    }
+  });
+  for (var g = 0; g < generic; g++) {
+    signs.push({ big: 'RESERVED', small: '', players: null, time: null, isGeneric: true });
+  }
+
+  if (!signs.length) {
+    alert('Nothing to print &mdash; no bookings and no blank signs requested.');
+    return;
+  }
+
+  var logo = getLogoSrc();
+  var dateLabel = currentDetailDateLabel || '';
+
+  var html = '';
+  html += '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reserved Signs</title>';
+  html += '<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">';
+  html += '<style>';
+  html += '@page { size: A4 portrait; margin: 0; }';
+  html += '* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }';
+  html += 'html,body { margin:0; padding:0; background:#fff; }';
+  html += '.sheet { width:210mm; }';
+  html += '.sign { width:210mm; height:148.5mm; padding:12mm 14mm; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; page-break-inside:avoid; break-inside:avoid; border-bottom:1px dashed #bbb; overflow:hidden; }';
+  html += '.sign:nth-child(2n) { page-break-after:always; break-after:page; border-bottom:none; }';
+  html += '.sign:last-child { page-break-after:auto; break-after:auto; }';
+  html += '.sign-logo { height:16mm; margin-bottom:4mm; opacity:0.9; }';
+  html += '.sign-kicker { font-family:"DM Mono",monospace; font-size:9pt; letter-spacing:0.32em; text-transform:uppercase; color:#8a8a8a; margin-bottom:5mm; }';
+  html += '.sign-res { font-family:"Bebas Neue",sans-serif; font-size:22pt; letter-spacing:0.3em; color:#e8620a; margin-bottom:3mm; }';
+  html += '.sign-big { font-family:"Bebas Neue",sans-serif; font-size:62pt; line-height:0.95; letter-spacing:0.02em; color:#111; word-break:break-word; max-width:100%; }';
+  html += '.sign-big.long { font-size:44pt; }';
+  html += '.sign-big.vlong { font-size:32pt; }';
+  html += '.sign-small { font-family:"DM Mono",monospace; font-size:12pt; color:#555; margin-top:5mm; }';
+  html += '.sign-meta { font-family:"DM Mono",monospace; font-size:9pt; color:#999; margin-top:3mm; letter-spacing:0.08em; }';
+  html += '.sign-date { position:absolute; bottom:8mm; left:0; right:0; font-family:"DM Mono",monospace; font-size:8pt; color:#bbb; letter-spacing:0.18em; text-transform:uppercase; }';
+  html += '@media screen { body { background:#eee; padding:20px 0; } .sheet { margin:0 auto; background:#fff; box-shadow:0 2px 18px rgba(0,0,0,0.2); } .print-bar { position:fixed; top:0; left:0; right:0; background:#1a0040; color:#fff; padding:10px 16px; font-family:sans-serif; font-size:14px; display:flex; align-items:center; justify-content:space-between; z-index:99; } .print-bar button { background:#e8620a; color:#fff; border:0; padding:8px 18px; border-radius:6px; font-weight:600; cursor:pointer; } body { padding-top:60px; } }';
+  html += '@media print { .print-bar { display:none !important; } body { padding:0; } .sheet { box-shadow:none; } }';
+  html += '</style></head><body>';
+  html += '<div class="print-bar"><span>' + signs.length + ' sign' + (signs.length===1?'':'s') + ' &mdash; ' + Math.ceil(signs.length/2) + ' page' + (Math.ceil(signs.length/2)===1?'':'s') + ' (A4, 2 per page)</span><button onclick="window.print()">Print</button></div>';
+  html += '<div class="sheet">';
+
+  signs.forEach(function(s) {
+    var big = escHtml(s.big).toUpperCase();
+    var cls = 'sign-big';
+    if (s.big.length > 28) cls += ' vlong';
+    else if (s.big.length > 16) cls += ' long';
+
+    html += '<div class="sign">';
+    if (logo) html += '<img class="sign-logo" src="' + logo + '" alt="">';
+    else html += '<div class="sign-kicker">The Woodsman\'s Quiz</div>';
+    html += '<div class="sign-res">RESERVED</div>';
+    if (s.isGeneric) {
+      html += '<div class="sign-big long">FOR THE QUIZ</div>';
+    } else {
+      html += '<div class="' + cls + '">' + big + '</div>';
+      if (s.small) html += '<div class="sign-small">' + escHtml(s.small) + '</div>';
+      var meta = [];
+      if (s.players) meta.push(s.players + ' player' + (s.players==1?'':'s'));
+      if (s.time) meta.push('arriving ' + fmtTime(s.time));
+      if (meta.length) html += '<div class="sign-meta">' + escHtml(meta.join('  \u00b7  ')) + '</div>';
+    }
+    if (dateLabel) html += '<div class="sign-date">' + escHtml(dateLabel) + '</div>';
+    html += '</div>';
+  });
+
+  html += '</div></body></html>';
+
+  var w = window.open('', '_blank');
+  if (!w) { alert('Please allow pop-ups to print the signs.'); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 async function cancelBooking(id, idx) {
@@ -1767,6 +1908,32 @@ async function markExpensePaid(id) {
     alert('Could not connect.');
   }
 }
+
+// ── Wire up reserved-signs controls ──
+(function() {
+  function attachSignControls() {
+    var toggle  = document.getElementById('signs-toggle');
+    var panel   = document.getElementById('signs-panel');
+    var printBtn= document.getElementById('signs-print');
+    var genInput= document.getElementById('signs-generic');
+    if (!toggle || !panel || !printBtn || !genInput) return;
+
+    toggle.addEventListener('click', function() {
+      var open = panel.style.display === 'none' || panel.style.display === '';
+      panel.style.display = open ? 'block' : 'none';
+      toggle.textContent  = open ? 'Hide' : 'Set up signs';
+      if (open) updateSignsCount();
+    });
+    genInput.addEventListener('input', updateSignsCount);
+    printBtn.addEventListener('click', printReservedSigns);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachSignControls);
+  } else {
+    attachSignControls();
+  }
+})();
+
 </script>
 </body>
 </html>
