@@ -566,10 +566,61 @@
         <div class="view-header">
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.5);">Finance Dashboard</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-ghost" onclick="showWeekForm()" style="border-color:rgba(61,220,132,0.35);color:#3ddc84;">&#x1F4DD; Log Week</button>
             <button class="btn-ghost" onclick="showExpenseForm()">&#x2795; Claim</button>
             <button class="btn-ghost" onclick="showExpenseList()">&#x1F4CB; Expenses</button>
             <button class="btn-ghost" onclick="loadFinance()">&#x21BB; Refresh</button>
             <button class="btn-ghost" onclick="lockFinance()" style="border-color:rgba(255,68,102,0.3);color:rgba(255,68,102,0.6);">&#x1F512; Lock</button>
+          </div>
+        </div>
+
+        <!-- Log a week's results (hidden by default) -->
+        <div id="week-form-panel" style="display:none;margin-bottom:14px;">
+          <div class="panel" style="border-color:rgba(61,220,132,0.6);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:0.08em;color:#fff;">Log a Week</div>
+              <button class="btn-ghost" onclick="hideWeekForm()">&#x2715; Cancel</button>
+            </div>
+            <div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-bottom:14px;">
+              Booked players and the running pot are worked out automatically.
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label>Quiz Date <span style="color:#e8620a">*</span></label>
+                <input type="date" id="wk-date">
+              </div>
+              <div class="field">
+                <label>Teams <span style="color:#e8620a">*</span></label>
+                <input type="number" id="wk-teams" placeholder="e.g. 11" min="0" step="1">
+              </div>
+              <div class="field">
+                <label>Players In <span style="color:#e8620a">*</span></label>
+                <input type="number" id="wk-players" placeholder="e.g. 40" min="0" step="1">
+              </div>
+              <div class="field">
+                <label>Takings (£) <span style="color:#e8620a">*</span></label>
+                <input type="number" id="wk-takings" placeholder="e.g. 74.00" min="0" step="0.01">
+              </div>
+              <div class="field">
+                <label>Jackpot Game <span style="color:#e8620a">*</span></label>
+                <input type="text" id="wk-game" list="wk-game-list" placeholder="e.g. Snakes" autocomplete="off">
+                <datalist id="wk-game-list"></datalist>
+                <div style="font-size:0.55rem;color:rgba(255,255,255,0.25);margin-top:4px;">Pick a past game or type a new one</div>
+              </div>
+              <div class="field">
+                <label>Jackpot Given Away (£) <span style="color:#e8620a">*</span></label>
+                <input type="number" id="wk-jackpot" placeholder="0.00" min="0" step="0.01" value="0">
+              </div>
+              <div class="field span-2">
+                <label>Added to Pay Fund (£)</label>
+                <input type="number" id="wk-split" min="0" step="0.01" value="15">
+                <div style="font-size:0.55rem;color:rgba(255,255,255,0.25);margin-top:4px;">Normally £15 &mdash; only change if it was different</div>
+              </div>
+            </div>
+            <div id="wk-preview" style="background:rgba(26,0,64,0.5);border-radius:12px;padding:12px 14px;margin-top:4px;font-size:0.7rem;color:rgba(255,255,255,0.5);display:none;"></div>
+            <div class="divider"></div>
+            <button class="btn-primary" onclick="submitWeek()">SAVE WEEK</button>
+            <div class="status-bar" id="week-status"></div>
           </div>
         </div>
 
@@ -736,6 +787,20 @@ async function apiFetch(qs) {
           p_description: p.get('description') || '', p_amount: parseFloat(p.get('amount'))
         });
         return wrap({ success: true, id });
+      }
+
+      case 'addWeek': {
+        const r = await rpc('qz_save_finance_week', {
+          p_password: p.get('password'),
+          p_date: p.get('date'),
+          p_teams: parseInt(p.get('teams')),
+          p_players: parseInt(p.get('players')),
+          p_takings: parseFloat(p.get('takings')),
+          p_added_from_split: parseFloat(p.get('split')),
+          p_jackpot_game: p.get('game'),
+          p_jackpot_winnings: parseFloat(p.get('jackpot'))
+        });
+        return wrap({ success: true, week: r });
       }
 
       case 'markExpensePaid':
@@ -1652,13 +1717,23 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
     return potSoFar - splitSoFar;
   });
   const n = giveawayVals.length;
-  const xMean = (n-1)/2;
-  const yMean = giveawayVals.reduce(function(s,v){ return s+v; }, 0)/n;
-  var num2=0, den2=0;
-  giveawayVals.forEach(function(v,i){ num2+=(i-xMean)*(v-yMean); den2+=(i-xMean)*(i-xMean); });
-  const slope = den2 ? num2/den2 : 0;
-  const intercept = yMean - slope*xMean;
   const weeksProj = 10;
+
+  // The giveaway pot moves by (takings - jackpot paid out) each week, so the
+  // projection is built from those two averages rather than fitted to the
+  // curve. Crucially it starts from the actual current value, so there's no
+  // jump between the solid line and the dashed one.
+  const jackpotVals = played.map(function(w){ return parseFloat(w['Jackpot Winnings'])||0; });
+  const takingsVals = played.map(function(w){ return parseFloat(w['Takings'])||0; });
+  const avgTakingsWk = takingsVals.reduce(function(s,v){ return s+v; }, 0) / n;
+  const avgJackpotWk = jackpotVals.reduce(function(s,v){ return s+v; }, 0) / n;
+  const netPerWeek   = avgTakingsWk - avgJackpotWk;
+
+  // How often the jackpot actually goes, and for how much when it does
+  const winWeeks = jackpotVals.filter(function(v){ return v > 0; });
+  const winRate  = winWeeks.length / n;
+  const avgWin   = winWeeks.length ? winWeeks.reduce(function(s,v){ return s+v; }, 0) / winWeeks.length : 0;
+  const currentGiveaway = giveawayVals[n-1];
 
   // ── Best/worst weeks ──
   var bestWeek  = played.reduce(function(b,w){ return (parseFloat(w['Takings'])||0) > (parseFloat(b['Takings'])||0) ? w : b; }, played[0]);
@@ -1830,7 +1905,12 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
   // CHARTS
   html += '<div class="chart-wrap"><div class="chart-title">Takings per Week</div><canvas id="chart-takings" height="160"></canvas></div>';
   html += '<div class="chart-wrap"><div class="chart-title">Giveaway Pot &amp; Projection</div><canvas id="chart-pot" height="180"></canvas></div>';
-  html += '<div style="font-size:0.55rem;color:rgba(255,255,255,0.2);letter-spacing:0.06em;margin-bottom:12px;">Linear trend projection &mdash; accounts for jackpot wins</div>';
+  html += '<div style="background:rgba(26,0,64,0.4);border-radius:10px;padding:10px 12px;font-size:0.6rem;color:rgba(255,255,255,0.4);line-height:1.7;margin-bottom:12px;">'
+    + 'Pot moves by takings minus jackpot paid out. Averaging ' + fmtGBP(avgTakingsWk) + ' in and '
+    + fmtGBP(avgJackpotWk) + ' out per week, so <strong style="color:#e8620a;">' + (netPerWeek>=0?'+':'') + fmtGBP(netPerWeek) + '/week</strong> expected.<br>'
+    + 'Jackpot has gone ' + winWeeks.length + ' time' + (winWeeks.length===1?'':'s') + ' in ' + n + ' weeks ('
+    + Math.round(winRate*100) + '% of weeks, averaging ' + fmtGBP(avgWin) + ' when it does).'
+    + '</div>';
   html += '<div class="chart-wrap"><div class="chart-title">Players &mdash; Booked vs Actual</div><canvas id="chart-players" height="160"></canvas></div>';
   html += '<div class="chart-wrap"><div class="chart-title">Revenue per Player by Week</div><canvas id="chart-rev" height="140"></canvas></div>';
 
@@ -1852,26 +1932,62 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
     options: { responsive:true, plugins:{ legend:legendCfg, tooltip:{ callbacks:{ label:function(ctx){ return fmtGBP(ctx.parsed.y); } } } }, scales:axisCfg }
   });
 
-  // Pot chart
+  // ── Pot chart: actual, plus three anchored projection scenarios ──
   var projLabels = labels.slice();
-  var bridgedProj = giveawayVals.map(function(){ return null; });
-  bridgedProj[n-1] = giveawayVals[n-1];
-  for (var pi=1; pi<=weeksProj; pi++) {
-    projLabels.push('+'+pi+'wk');
-    bridgedProj.push(parseFloat((intercept + slope*(n-1+pi)).toFixed(2)));
+  for (var pi=1; pi<=weeksProj; pi++) projLabels.push('+'+pi+'wk');
+
+  // Every projection line starts on the last real data point so the chart
+  // reads as one continuous story.
+  function projSeries(perWeek) {
+    var arr = giveawayVals.map(function(){ return null; });
+    arr[n-1] = currentGiveaway;
+    for (var i=1; i<=weeksProj; i++) {
+      arr.push(parseFloat((currentGiveaway + perWeek*i).toFixed(2)));
+    }
+    return arr;
   }
+
+  var expected = projSeries(netPerWeek);
+  var noWins   = projSeries(avgTakingsWk);
+
+  // Pessimistic case: takings hold up but the jackpot goes at roughly twice
+  // the usual rate. Floored at the £150 minimum, since the pot gets topped
+  // back up rather than going below it.
+  var badLuckRate = avgTakingsWk - Math.min(avgTakingsWk, avgJackpotWk * 2);
+  var badLuck = giveawayVals.map(function(){ return null; });
+  badLuck[n-1] = currentGiveaway;
+  for (var bi=1; bi<=weeksProj; bi++) {
+    badLuck.push(parseFloat(Math.max(150, currentGiveaway + badLuckRate*bi).toFixed(2)));
+  }
+
   var thresholdData = projLabels.map(function(){ return 150; });
+
   finCharts.pot = new Chart(document.getElementById('chart-pot'), {
     type: 'line',
     data: { labels: projLabels, datasets: [
-      { label:'Giveaway Pot', data: giveawayVals.concat(new Array(weeksProj).fill(null)),
-        borderColor:'#3ddc84', backgroundColor:'rgba(61,220,132,0.12)', tension:0.35, fill:true, pointRadius:4, pointBackgroundColor:'#3ddc84' },
-      { label:'Projected', data: bridgedProj,
-        borderColor:'#e8620a', fill:false, borderDash:[6,4], tension:0.35, pointRadius:3, pointBackgroundColor:'#e8620a' },
+      { label:'Actual', data: giveawayVals.concat(new Array(weeksProj).fill(null)),
+        borderColor:'#3ddc84', backgroundColor:'rgba(61,220,132,0.12)', borderWidth:3,
+        tension:0.35, fill:true, pointRadius:4, pointBackgroundColor:'#3ddc84' },
+      { label:'If nobody wins', data: noWins,
+        borderColor:'rgba(61,220,132,0.5)', fill:false, borderDash:[2,3], borderWidth:1.5,
+        tension:0.2, pointRadius:0 },
+      { label:'Expected', data: expected,
+        borderColor:'#e8620a', fill:false, borderDash:[6,4], borderWidth:2.5,
+        tension:0.2, pointRadius:3, pointBackgroundColor:'#e8620a' },
+      { label:'Unlucky run', data: badLuck,
+        borderColor:'rgba(255,153,68,0.5)', fill:false, borderDash:[2,3], borderWidth:1.5,
+        tension:0.2, pointRadius:0 },
       { label:'\u00a3150 Min', data: thresholdData,
         borderColor:'#ff4466', borderWidth:2, borderDash:[4,3], pointRadius:0, fill:false, tension:0 }
     ]},
-    options: { responsive:true, plugins:{ legend:legendCfg, tooltip:{ callbacks:{ label:function(ctx){ return ctx.raw!==null?(ctx.dataset.label+': '+fmtGBP(ctx.raw)):''; } } } }, scales:axisCfg }
+    options: {
+      responsive:true,
+      plugins:{
+        legend:legendCfg,
+        tooltip:{ callbacks:{ label:function(ctx){ return ctx.raw!==null?(ctx.dataset.label+': '+fmtGBP(ctx.raw)):''; } } }
+      },
+      scales:axisCfg
+    }
   });
 
   finCharts.players = new Chart(document.getElementById('chart-players'), {
@@ -1897,6 +2013,103 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
 
 
 // ── Expenses ──
+// ── Log a week's results ──
+function lastThursday() {
+  var d = new Date();
+  var back = (d.getDay() - 4 + 7) % 7;   // 4 = Thursday
+  d.setDate(d.getDate() - back);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function showWeekForm() {
+  hideExpenseForm(); hideExpenseList();
+  document.getElementById('week-form-panel').style.display = 'block';
+  document.getElementById('week-status').className = 'status-bar';
+  document.getElementById('week-status').textContent = '';
+
+  // Default to the Thursday just gone
+  document.getElementById('wk-date').value = isoDate(lastThursday());
+
+  // Build the jackpot game suggestions from weeks already logged
+  var list = document.getElementById('wk-game-list');
+  list.innerHTML = '';
+  var games = [];
+  (financeData || []).forEach(function(w) {
+    var g = String(w['Jackpot Game'] || '').trim();
+    if (g && games.indexOf(g) === -1) games.push(g);
+  });
+  games.forEach(function(g) {
+    var o = document.createElement('option'); o.value = g; list.appendChild(o);
+  });
+
+  // Carry forward the most recent split so it usually needs no thought
+  var played = (financeData || []).filter(function(w){ return w['Added from split'] !== '' && w['Added from split'] !== undefined; });
+  if (played.length) document.getElementById('wk-split').value = played[played.length-1]['Added from split'];
+
+  ['wk-teams','wk-players','wk-takings','wk-game'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('wk-jackpot').value = '0';
+  updateWeekPreview();
+  document.getElementById('week-form-panel').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function hideWeekForm() {
+  document.getElementById('week-form-panel').style.display = 'none';
+}
+
+// Shows the running pot the entry will produce, so mistakes are obvious
+function updateWeekPreview() {
+  var box = document.getElementById('wk-preview');
+  var takings = parseFloat(document.getElementById('wk-takings').value);
+  var jackpot = parseFloat(document.getElementById('wk-jackpot').value) || 0;
+  var split   = parseFloat(document.getElementById('wk-split').value)   || 0;
+  if (isNaN(takings)) { box.style.display = 'none'; return; }
+
+  var played = (financeData || []).filter(function(w){ return w['Pot'] !== '' && w['Pot'] !== undefined; });
+  var prevPot = played.length ? (parseFloat(played[played.length-1]['Pot']) || 0) : 0;
+  var newPot  = prevPot + takings + split - jackpot;
+
+  box.style.display = 'block';
+  box.innerHTML = 'Pot goes from <strong style="color:#fff;">' + fmtGBP(prevPot) + '</strong> to '
+    + '<strong style="color:' + (newPot >= prevPot ? '#3ddc84' : '#ff4466') + ';">' + fmtGBP(newPot) + '</strong>'
+    + '<span style="color:rgba(255,255,255,0.28);"> &nbsp;(' + fmtGBP(prevPot) + ' + ' + fmtGBP(takings)
+    + ' + ' + fmtGBP(split) + ' &minus; ' + fmtGBP(jackpot) + ')</span>';
+}
+
+async function submitWeek() {
+  const status  = document.getElementById('week-status');
+  const date    = document.getElementById('wk-date').value;
+  const teams   = document.getElementById('wk-teams').value;
+  const players = document.getElementById('wk-players').value;
+  const takings = document.getElementById('wk-takings').value;
+  const game    = document.getElementById('wk-game').value.trim();
+  const jackpot = document.getElementById('wk-jackpot').value;
+  const split   = document.getElementById('wk-split').value;
+
+  if (!date)                      { setStatus(status,'error','Please pick the quiz date.'); return; }
+  if (teams === ''   || teams < 0)   { setStatus(status,'error','Please enter the number of teams.'); return; }
+  if (players === '' || players < 0) { setStatus(status,'error','Please enter how many players came in.'); return; }
+  if (takings === '')             { setStatus(status,'error','Please enter the takings.'); return; }
+  if (!game)                      { setStatus(status,'error','Please enter which jackpot game was played.'); return; }
+  if (jackpot === '')             { setStatus(status,'error','Please enter the jackpot given away (0 if none).'); return; }
+
+  setStatus(status,'loading','Saving...');
+  try {
+    const params = new URLSearchParams({
+      action:'addWeek', password: financePw, date: date, teams: teams,
+      players: players, takings: takings, game: game,
+      jackpot: jackpot, split: split || '0'
+    });
+    const res  = await apiFetch(params);
+    const data = await res.json();
+    if (data.error) { setStatus(status,'error', data.error === 'unauthorised' ? 'Session expired — please unlock again.' : data.error); return; }
+    setStatus(status,'success','✓ Week ' + (data.week && data.week.week_no ? data.week.week_no : '') + ' saved!');
+    setTimeout(function(){ hideWeekForm(); loadFinance(); }, 900);
+  } catch (err) {
+    setStatus(status,'error','Could not save. Please try again.');
+  }
+}
+
 function showExpenseForm() {
   document.getElementById('expense-form-panel').style.display = 'block';
   document.getElementById('expense-list-panel').style.display = 'none';
@@ -2067,6 +2280,19 @@ async function markExpensePaid(id) {
   } else {
     attachSignControls();
   }
+})();
+
+
+// ── Live pot preview on the week form ──
+(function() {
+  function attach() {
+    ['wk-takings','wk-jackpot','wk-split'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', updateWeekPreview);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
+  else attach();
 })();
 
 </script>
