@@ -683,6 +683,22 @@
 const SUPABASE_URL      = 'https://zjdxgcmeraiodigwdxpy.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_bGAlVUYeS9u1Pv8kmTGdrw_wSXBpUJA';
 
+// ── ntfy push ──────────────────────────────────────────────────────
+// Sent from the visitor's own browser, so it uses their IP rather than a
+// shared cloud one — which is what kept hitting ntfy's rate limit before.
+// Trade-off: this topic is visible in the page source.
+const NTFY_TOPIC = 'woodsman-quiz-k7m2p9xq4v';
+
+function notify(title, body) {
+  if (!NTFY_TOPIC) return;
+  // Fire and forget — a failed notification must never affect the booking
+  fetch('https://ntfy.sh/' + NTFY_TOPIC, {
+    method: 'POST',
+    headers: { 'Title': title.replace(/[^\x20-\x7E]/g, ''), 'Tags': 'tada,beer' },
+    body: body
+  }).catch(function(){});
+}
+
 // Calls a Postgres function and returns the parsed result.
 async function rpc(fn, args) {
   const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + fn, {
@@ -1054,12 +1070,31 @@ async function submitBooking() {
       ? '&#x2713; Booked for ' + successCount + ' quiz nights! See you every Thursday.'
       : '&#x2713; Reserved for ' + name + '! See you Thursday.';
     setStatus(status,'success',label);
+
+    // One push per booking, whether it was a single week or all 52
+    if (successCount > 0) {
+      const first = makeBooking(datesToBook[0]);
+      const who   = first.team ? first.team + ' (' + first.name + ')' : first.name;
+      const line  = first.players + ' player' + (first.players == 1 ? '' : 's') + ', arriving ' + first.time;
+      if (recurringEnabled) {
+        notify('New recurring booking',
+               who + '\n' + line + '\nBooked for ' + successCount + ' Thursdays from ' + prettyDay(datesToBook[0]));
+      } else {
+        notify('New booking - ' + prettyDay(datesToBook[0]), who + '\n' + line);
+      }
+    }
+
     resetForm(); playsting();
   } catch(e) {
     setStatus(status,'error','Could not connect. Please try again.');
   } finally {
     btn.disabled = false;
   }
+}
+
+function prettyDay(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  return isNaN(d) ? iso : d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
 }
 
 function playsting() {
