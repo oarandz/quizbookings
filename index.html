@@ -689,14 +689,43 @@ const SUPABASE_ANON_KEY = 'sb_publishable_bGAlVUYeS9u1Pv8kmTGdrw_wSXBpUJA';
 // Trade-off: this topic is visible in the page source.
 const NTFY_TOPIC = 'woodsman-quiz-k7m2p9xq4v';
 
-function notify(title, body) {
+function notify(title, body, tags) {
   if (!NTFY_TOPIC) return;
   // Fire and forget — a failed notification must never affect the booking
   fetch('https://ntfy.sh/' + NTFY_TOPIC, {
     method: 'POST',
-    headers: { 'Title': title.replace(/[^\x20-\x7E]/g, ''), 'Tags': 'tada,beer' },
+    headers: { 'Title': title.replace(/[^\x20-\x7E]/g, ''), 'Tags': tags || 'tada,beer' },
     body: body
   }).catch(function(){});
+}
+
+// Sends a notification with a running total for that week appended, so every
+// alert answers "and where does that leave us?" without opening the app.
+async function notifyWithTotals(title, body, iso, tags) {
+  if (!NTFY_TOPIC) return;
+  let footer = '';
+  try {
+    const res  = await apiFetch('action=get&date=' + iso);
+    const data = await res.json();
+    const list = data.bookings || [];
+    const teams   = list.length;
+    const players = list.reduce(function(s,b){ return s + (parseInt(b.players) || 0); }, 0);
+    footer = '\n\n' + prettyDay(iso).toUpperCase() + ' NOW: '
+           + teams + ' team' + (teams === 1 ? '' : 's')
+           + ' / ' + players + ' player' + (players === 1 ? '' : 's');
+  } catch (e) {
+    // No totals available — send the notification anyway
+  }
+  notify(title, body + footer, tags);
+}
+
+// Builds the "who and what" block shared by every booking notification
+function bookingSummary(b) {
+  const team = (b.team || '').trim();
+  let out = team ? team + '\n' + b.name : b.name;
+  out += '\n' + b.players + ' player' + (b.players == 1 ? '' : 's') + ' - arriving ' + b.time;
+  if ((b.notes || '').trim()) out += '\nNotes: ' + b.notes.trim();
+  return out;
 }
 
 // Calls a Postgres function and returns the parsed result.
@@ -1074,14 +1103,13 @@ async function submitBooking() {
     // One push per booking, whether it was a single week or all 52
     if (successCount > 0) {
       const first = makeBooking(datesToBook[0]);
-      const who   = first.team ? first.team + ' (' + first.name + ')' : first.name;
-      const line  = first.players + ' player' + (first.players == 1 ? '' : 's') + ', arriving ' + first.time;
+      let body = bookingSummary(first);
       if (recurringEnabled) {
-        notify('New recurring booking',
-               who + '\n' + line + '\nBooked for ' + successCount + ' Thursdays from ' + prettyDay(datesToBook[0]));
-      } else {
-        notify('New booking - ' + prettyDay(datesToBook[0]), who + '\n' + line);
+        body += '\n\nBooked for ' + successCount + ' Thursdays from ' + prettyDay(datesToBook[0]);
       }
+      notifyWithTotals(
+        recurringEnabled ? 'New recurring booking' : 'New booking - ' + prettyDay(datesToBook[0]),
+        body, datesToBook[0], 'tada,beer');
     }
 
     resetForm(); playsting();
@@ -1247,6 +1275,7 @@ async function updateBooking() {
   if (!myBooking) return;
   const btn = document.getElementById('btn-update');
   const status = document.getElementById('manage-status');
+  const before  = { ...myBooking };
   const updated = {
     ...myBooking,
     name:    document.getElementById('manage-name').value.trim(),
@@ -1261,7 +1290,21 @@ async function updateBooking() {
     const params = new URLSearchParams({ action:'update', id:myBooking.id, ...updated });
     const res  = await apiFetch(params);
     const data = await res.json();
-    if (data.success) { myBooking = updated; setStatus(status,'success','&#x2713; Booking updated!'); }
+    if (data.success) {
+      // Report what actually changed, so the alert is worth reading
+      const changes = [];
+      if (before.team    !== updated.team)          changes.push('Team: ' + (before.team || '(none)') + ' -> ' + (updated.team || '(none)'));
+      if (before.name    !== updated.name)          changes.push('Name: ' + before.name + ' -> ' + updated.name);
+      if (String(before.players) !== String(updated.players)) changes.push('Players: ' + before.players + ' -> ' + updated.players);
+      if (before.time    !== updated.time)          changes.push('Arriving: ' + before.time + ' -> ' + updated.time);
+      if ((before.notes||'') !== (updated.notes||'')) changes.push('Notes: ' + (updated.notes || '(cleared)'));
+
+      myBooking = updated;
+      setStatus(status,'success','&#x2713; Booking updated!');
+      notifyWithTotals('Booking changed - ' + prettyDay(updated.date),
+        bookingSummary(updated) + (changes.length ? '\n\nCHANGED:\n' + changes.join('\n') : ''),
+        updated.date, 'pencil');
+    }
     else setStatus(status,'error','Could not save. Please try again.');
   } catch(e) {
     setStatus(status,'error','Could not connect. Please try again.');
@@ -1276,10 +1319,13 @@ async function cancelMyBooking() {
   const status = document.getElementById('manage-status');
   setStatus(status,'loading','Cancelling…');
   try {
+    const cancelled = { ...myBooking };
     const params = new URLSearchParams({ action:'cancel', id:myBooking.id });
     const res  = await apiFetch(params);
     const data = await res.json();
     if (data.success) {
+      notifyWithTotals('Booking cancelled - ' + prettyDay(cancelled.date),
+        bookingSummary(cancelled), cancelled.date, 'x');
       myBookings = myBookings.filter(b => b.id !== myBooking.id);
       myBooking = null;
       document.getElementById('manage-content').style.display = 'none';
