@@ -1,1 +1,13 @@
+name: Keep Supabase Awake
 
+"on":
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        run: 'curl --fail --silent --show-error -X POST "https://zjdxgcmeraiodigwdxpy.supabase.co/rest/v1/rpc/qz_ping" -H "apikey: sb_publishable_bGAlVUYeS9u1Pv8kmTGdrw_wSXBpUJA" -H "Authorization: Bearer sb_publishable_bGAlVUYeS9u1Pv8kmTGdrw_wSXBpUJA" -H "Content-Type: application/json" -d "{}"'
