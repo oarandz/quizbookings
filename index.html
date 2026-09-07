@@ -226,7 +226,7 @@
 
   #host-tab-bookings, #host-tab-finance { font-size: 0.95rem; }
   .fin-card { background: rgba(100,30,160,0.82); border: 2px solid rgba(232,98,10,0.5); border-radius:18px; padding:18px 22px; text-align:center; }
-  .fin-card-label { font-size:0.58rem; letter-spacing:0.25em; text-transform:uppercase; color:rgba(255,255,255,0.45); margin-bottom:6px; font-family:'DM Mono',monospace; }
+  .fin-card-label { font-size:0.8125rem; letter-spacing:0.25em; text-transform:uppercase; color:rgba(255,255,255,0.75); margin-bottom:6px; font-family:'DM Mono',monospace; }
   .fin-card-value { font-family:'Bebas Neue',sans-serif; font-size:clamp(28px,5vw,48px); line-height:1; color:#fff; text-shadow:0 0 20px rgba(232,98,10,0.5); }
   .fin-card-value.orange { color:#e8620a; }
   .fin-card-value.green  { color:#3ddc84; text-shadow:0 0 20px rgba(61,220,132,0.4); }
@@ -237,6 +237,66 @@
     .span-2 { grid-column: 1; }
     .stat-row { grid-template-columns: 1fr 1fr; }
   }
+
+/* Keep the original Woodsman's identity; refine controls and chart legibility. */
+:root { color-scheme:dark; --ink:#fff; --muted:#ded0ee; --line:rgba(232,98,10,.35); }
+body { font-size:16px; line-height:1.5; }
+/* Background, centred logo, page width and brand type remain as supplied. */
+.panel { padding:24px 26px; }
+.field label { font-size:14px; letter-spacing:.07em; color:rgba(255,255,255,.85); }
+.field input,.field select,.field textarea { font-size:16px; min-height:48px; line-height:1.4; }
+.field .hint { font-size:13px; color:rgba(255,255,255,.75); letter-spacing:.01em; }
+.field input::placeholder,.field textarea::placeholder { color:rgba(255,255,255,.6); }
+.section-label { font-size:14px; color:#ffad65; letter-spacing:.12em; }
+button,input,select,textarea,summary,[role=checkbox] { touch-action:manipulation; }
+:focus-visible { outline:3px solid #ffcc70!important; outline-offset:4px; }
+.btn-primary { min-height:50px; }
+.btn-ghost { min-height:44px; font-size:13px; letter-spacing:.03em; color:rgba(255,255,255,.8); }
+.tab-btn { min-height:48px; font-size:1.3rem; }
+.status-bar,.empty-state { font-size:14px; }
+.empty-state { color:rgba(255,255,255,.75); }
+.booking-team,.booking-notes,.booking-players { color:rgba(255,255,255,.75); font-size:13px; }
+.booking-cancel { min-width:44px; min-height:44px; }
+#cal-widget button { min-height:40px; }
+#cal-grid > * { font-size:14px!important; }
+#cal-grid button { font-family:'DM Mono',monospace; }
+#cal-grid div { color:rgba(255,255,255,.4)!important; }
+#recurring-row span { font-size:13px!important; letter-spacing:.04em!important; }
+.fin-card { min-width:0; }
+.fin-card-label,.stat-label { font-size:13px; letter-spacing:.08em; color:rgba(255,255,255,.78); }
+.fin-card-value,.stat-value { font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.fin-section-heading { font-family:'Bebas Neue',sans-serif; font-weight:400; font-size:1.6rem; letter-spacing:.1em; color:#ffad65; margin:24px 0 12px; }
+/* Darker purple chart paper keeps the colourful backdrop from competing with the data. */
+.chart-wrap { background:rgba(42,8,76,.96); border:1.5px solid rgba(232,98,10,.6); border-radius:20px; padding:24px; margin-bottom:20px; min-width:0; }
+.chart-header { display:flex; justify-content:space-between; gap:16px; align-items:start; margin-bottom:20px; }
+.chart-title { font-size:18px; font-weight:600; color:var(--ink); margin:0 0 5px; }
+.chart-sub { color:var(--muted); font-size:13px; max-width:650px; }
+.chart-stage { position:relative; height:300px; min-width:0; }
+.chart-wrap.pot-chart .chart-stage { height:350px; }
+.chart-note { padding:12px 0 0; color:var(--muted); font-size:13px; }
+.chart-data { margin-top:18px; border-top:1px solid var(--line); padding-top:12px; }
+summary { cursor:pointer; font-size:14px; color:#dfd6eb; padding:4px 0; }
+.table-scroll { overflow:auto; max-height:300px; margin-top:12px; }
+table { width:100%; border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums; }
+th,td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
+th:first-child,td:first-child { text-align:left; }
+th { color:#ded7e7; }
+.finance-details { margin-top:24px; border-top:1px solid var(--line); padding-top:18px; }
+.finance-details > summary { font-size:18px; font-weight:600; }
+
+.chart-title { font-family:'Bebas Neue',sans-serif; font-size:1.65rem; font-weight:400; letter-spacing:.06em; color:#fff; }
+.chart-sub,.chart-note { font-family:'DM Mono',monospace; line-height:1.6; letter-spacing:0; }
+.finance-details > summary { font-family:'Bebas Neue',sans-serif; font-size:1.6rem; font-weight:400; letter-spacing:.06em; }
+@media(max-width:600px) {
+ .panel { padding:20px 18px; }
+ .form-grid { grid-template-columns:1fr; } .span-2 { grid-column:1; }
+ #finance-dashboard div[style*="grid-template-columns:repeat(3"] { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
+ .fin-card { padding:16px 12px; }
+ .chart-wrap { padding:18px 12px; } .chart-stage { height:280px; } .chart-header { padding:0 6px; }
+ .view-header > div { flex-wrap:wrap; } .booking-row { flex-wrap:wrap; } .booking-meta { margin-left:auto; }
+}
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -249,34 +309,34 @@
 
   <!-- DATE HERO / CALENDAR -->
   <div class="panel" style="padding:20px 22px 22px;margin-bottom:14px;">
-    <div style="font-size:0.6rem;letter-spacing:0.28em;text-transform:uppercase;color:#e8620a;margin-bottom:14px;font-family:'DM Mono',monospace;text-align:center;">You are booking for</div>
+    <div style="font-size:0.8125rem;letter-spacing:0.28em;text-transform:uppercase;color:#e8620a;margin-bottom:14px;font-family:'DM Mono',monospace;text-align:center;">You are booking for</div>
 
     <div id="cal-selected-display" style="text-align:center;font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,7vw,58px);line-height:1;color:#fff;letter-spacing:0.04em;text-shadow:0 0 30px rgba(232,98,10,0.5);margin-bottom:16px;">&mdash;</div>
 
     <div id="cal-widget" style="max-width:340px;margin:0 auto;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <button onclick="calPrevMonth()" style="background:none;border:1.5px solid rgba(232,98,10,0.3);border-radius:8px;color:rgba(255,255,255,0.5);font-size:1rem;padding:4px 12px;cursor:pointer;transition:all 0.15s;font-family:'DM Mono',monospace;" onmouseover="this.style.borderColor='#e8620a';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(232,98,10,0.3)';this.style.color='rgba(255,255,255,0.5)'">&lsaquo;</button>
+        <button aria-label="Previous month" onclick="calPrevMonth()" style="background:none;border:1.5px solid rgba(232,98,10,0.3);border-radius:8px;color:rgba(255,255,255,0.75);font-size:1rem;padding:4px 12px;cursor:pointer;transition:all 0.15s;font-family:'DM Mono',monospace;" onmouseover="this.style.borderColor='#e8620a';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(232,98,10,0.3)';this.style.color='rgba(255,255,255,0.5)'">&lsaquo;</button>
         <div id="cal-month-label" style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:0.12em;color:#fff;text-shadow:0 0 16px rgba(232,98,10,0.35);"></div>
-        <button onclick="calNextMonth()" style="background:none;border:1.5px solid rgba(232,98,10,0.3);border-radius:8px;color:rgba(255,255,255,0.5);font-size:1rem;padding:4px 12px;cursor:pointer;transition:all 0.15s;font-family:'DM Mono',monospace;" onmouseover="this.style.borderColor='#e8620a';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(232,98,10,0.3)';this.style.color='rgba(255,255,255,0.5)'">&rsaquo;</button>
+        <button aria-label="Next month" onclick="calNextMonth()" style="background:none;border:1.5px solid rgba(232,98,10,0.3);border-radius:8px;color:rgba(255,255,255,0.75);font-size:1rem;padding:4px 12px;cursor:pointer;transition:all 0.15s;font-family:'DM Mono',monospace;" onmouseover="this.style.borderColor='#e8620a';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(232,98,10,0.3)';this.style.color='rgba(255,255,255,0.5)'">&rsaquo;</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;">
-        <div style="text-align:center;font-size:0.55rem;letter-spacing:0.15em;color:rgba(255,255,255,0.25);font-family:'DM Mono',monospace;padding:4px 0;">M</div>
-        <div style="text-align:center;font-size:0.55rem;letter-spacing:0.15em;color:rgba(255,255,255,0.25);font-family:'DM Mono',monospace;padding:4px 0;">T</div>
-        <div style="text-align:center;font-size:0.55rem;letter-spacing:0.15em;color:rgba(255,255,255,0.25);font-family:'DM Mono',monospace;padding:4px 0;">W</div>
-        <div style="text-align:center;font-size:0.55rem;letter-spacing:0.15em;color:#e8620a;font-family:'DM Mono',monospace;padding:4px 0;">TH</div>
-        <div style="text-align:center;font-size:0.55rem;letter-spacing:0.15em;color:rgba(255,255,255,0.25);font-family:'DM Mono',monospace;padding:4px 0;">F</div>
-        <div style="text-align:center;font-size:0.55rem;letter-spacing:0.15em;color:rgba(255,255,255,0.25);font-family:'DM Mono',monospace;padding:4px 0;">S</div>
-        <div style="text-align:center;font-size:0.55rem;letter-spacing:0.15em;color:rgba(255,255,255,0.25);font-family:'DM Mono',monospace;padding:4px 0;">S</div>
+        <div style="text-align:center;font-size:0.8125rem;letter-spacing:0.15em;color:rgba(255,255,255,0.75);font-family:'DM Mono',monospace;padding:4px 0;">M</div>
+        <div style="text-align:center;font-size:0.8125rem;letter-spacing:0.15em;color:rgba(255,255,255,0.75);font-family:'DM Mono',monospace;padding:4px 0;">T</div>
+        <div style="text-align:center;font-size:0.8125rem;letter-spacing:0.15em;color:rgba(255,255,255,0.75);font-family:'DM Mono',monospace;padding:4px 0;">W</div>
+        <div style="text-align:center;font-size:0.8125rem;letter-spacing:0.15em;color:#e8620a;font-family:'DM Mono',monospace;padding:4px 0;">TH</div>
+        <div style="text-align:center;font-size:0.8125rem;letter-spacing:0.15em;color:rgba(255,255,255,0.75);font-family:'DM Mono',monospace;padding:4px 0;">F</div>
+        <div style="text-align:center;font-size:0.8125rem;letter-spacing:0.15em;color:rgba(255,255,255,0.75);font-family:'DM Mono',monospace;padding:4px 0;">S</div>
+        <div style="text-align:center;font-size:0.8125rem;letter-spacing:0.15em;color:rgba(255,255,255,0.75);font-family:'DM Mono',monospace;padding:4px 0;">S</div>
       </div>
       <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;"></div>
     </div>
 
     <div style="margin-top:16px;height:1.5px;background:linear-gradient(to right,transparent,rgba(232,98,10,0.35),transparent);"></div>
-    <div id="recurring-row" style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;" onclick="toggleRecurring()">
+    <div id="recurring-row" role="checkbox" tabindex="0" aria-checked="false" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();toggleRecurring();}" style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;" onclick="toggleRecurring()">
       <div id="recurring-box" style="width:20px;height:20px;border:2px solid rgba(232,98,10,0.5);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;background:transparent;">
         <span id="recurring-tick" style="display:none;color:#e8620a;font-size:14px;line-height:1;">&#x2713;</span>
       </div>
-      <span style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.45);font-family:'DM Mono',monospace;user-select:none;">Book me in for every quiz from this date</span>
+      <span style="font-size:0.8125rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.75);font-family:'DM Mono',monospace;user-select:none;">Book me in for every quiz from this date</span>
     </div>
   </div>
 
@@ -303,10 +363,10 @@
 
         <div class="field">
           <label>Your Name <span style="color:#e8620a">*</span></label>
-          <input type="text" id="field-name" placeholder="e.g. Conor" autocomplete="off">
+          <input type="text" id="field-name" aria-required="true" placeholder="e.g. Conor" autocomplete="name">
         </div>
         <div class="field">
-          <label>Team Name <span style="color:rgba(255,255,255,0.25);font-size:0.55rem">(optional)</span></label>
+          <label>Team Name <span style="color:rgba(255,255,255,0.75);font-size:0.8125rem">(optional)</span></label>
           <input type="text" id="field-team" placeholder="e.g. The Quiz Bois" autocomplete="off">
         </div>
         <div class="field">
@@ -345,13 +405,13 @@
         <div class="field span-2">
           <label>Mobile Number <span style="color:#e8620a">*</span></label>
           <div style="display:flex;gap:8px;align-items:stretch;">
-            <div style="background:rgba(26,0,64,0.6);border:2px solid rgba(232,98,10,0.4);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,0.5);font-size:0.85rem;white-space:nowrap;display:flex;align-items:center;">+44</div>
+            <div style="background:rgba(26,0,64,0.6);border:2px solid rgba(232,98,10,0.4);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,0.75);font-size:0.85rem;white-space:nowrap;display:flex;align-items:center;">+44</div>
             <input type="tel" id="field-phone" placeholder="7700 900000" inputmode="numeric" autocomplete="tel" style="flex:1;">
           </div>
           <span class="hint">Used to manage your booking &mdash; not shared</span>
         </div>
         <div class="field span-2">
-          <label>Notes <span style="color:rgba(255,255,255,0.25);font-size:0.55rem">(optional)</span></label>
+          <label>Notes <span style="color:rgba(255,255,255,0.75);font-size:0.8125rem">(optional)</span></label>
           <textarea id="field-notes" placeholder="e.g. accessibility needs, joining late from work&hellip;"></textarea>
         </div>
 
@@ -369,10 +429,10 @@
     <div id="manage-gate">
       <div class="panel" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.08em;color:#fff;text-shadow:0 0 30px rgba(232,98,10,0.5);">MY BOOKING</div>
-        <div style="font-size:0.7rem;color:rgba(255,255,255,0.4);letter-spacing:0.1em;">Enter your mobile number to see your bookings</div>
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.75);letter-spacing:0.1em;">Enter your mobile number to see your bookings</div>
         <div class="field" style="width:100%;max-width:320px;">
           <div style="display:flex;gap:8px;">
-            <div style="background:rgba(26,0,64,0.6);border:2px solid rgba(232,98,10,0.4);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,0.5);font-size:0.85rem;white-space:nowrap;display:flex;align-items:center;">+44</div>
+            <div style="background:rgba(26,0,64,0.6);border:2px solid rgba(232,98,10,0.4);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,0.75);font-size:0.85rem;white-space:nowrap;display:flex;align-items:center;">+44</div>
             <input type="tel" id="manage-phone" placeholder="7700 900000" inputmode="numeric" onkeydown="if(event.key==='Enter')lookupBooking()" style="flex:1;text-align:left;">
           </div>
         </div>
@@ -398,7 +458,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
           <div>
             <div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:0.06em;color:#fff;line-height:1;">YOUR BOOKING</div>
-            <div id="manage-booking-date" style="font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:#e8620a;margin-top:4px;font-family:'DM Mono',monospace;"></div>
+            <div id="manage-booking-date" style="font-size:0.8125rem;letter-spacing:0.2em;text-transform:uppercase;color:#e8620a;margin-top:4px;font-family:'DM Mono',monospace;"></div>
           </div>
           <button class="btn-ghost" onclick="backFromEdit()">&larr; Back</button>
         </div>
@@ -408,7 +468,7 @@
             <input type="text" id="manage-name" autocomplete="off">
           </div>
           <div class="field">
-            <label>Team Name <span style="color:rgba(255,255,255,0.25);font-size:0.55rem">(optional)</span></label>
+            <label>Team Name <span style="color:rgba(255,255,255,0.75);font-size:0.8125rem">(optional)</span></label>
             <input type="text" id="manage-team" autocomplete="off">
           </div>
           <div class="field">
@@ -442,7 +502,7 @@
             </select>
           </div>
           <div class="field span-2">
-            <label>Notes <span style="color:rgba(255,255,255,0.25);font-size:0.55rem">(optional)</span></label>
+            <label>Notes <span style="color:rgba(255,255,255,0.75);font-size:0.8125rem">(optional)</span></label>
             <textarea id="manage-notes" placeholder="e.g. accessibility needs&hellip;"></textarea>
           </div>
         </div>
@@ -465,7 +525,7 @@
   <div style="max-width:860px;margin:0 auto;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.08em;color:#fff;text-shadow:0 0 30px rgba(232,98,10,0.5);">HOST VIEW</div>
-      <button onclick="toggleHostView()" style="background:none;border:2px solid rgba(232,98,10,0.4);border-radius:12px;color:rgba(255,255,255,0.5);font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;padding:8px 16px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='#e8620a';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(232,98,10,0.4)';this.style.color='rgba(255,255,255,0.5)'">&#x2715; Close</button>
+      <button onclick="toggleHostView()" style="background:none;border:2px solid rgba(232,98,10,0.4);border-radius:12px;color:rgba(255,255,255,0.75);font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;padding:8px 16px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='#e8620a';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(232,98,10,0.4)';this.style.color='rgba(255,255,255,0.5)'">&#x2715; Close</button>
     </div>
     <!-- Host tabs -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
@@ -477,7 +537,7 @@
     <div id="view-gate">
       <div class="panel" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.08em;color:#fff;text-shadow:0 0 30px rgba(232,98,10,0.5);">HOST ACCESS</div>
-        <div style="font-size:0.7rem;color:rgba(255,255,255,0.4);letter-spacing:0.1em;">Enter the password to view bookings</div>
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.75);letter-spacing:0.1em;">Enter the password to view bookings</div>
         <div class="field" style="width:100%;max-width:280px;">
           <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPassword()" style="text-align:center;font-size:1rem;letter-spacing:0.15em;">
         </div>
@@ -492,7 +552,7 @@
       <!-- All dates with bookings -->
       <div id="view-dates">
         <div class="view-header">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.5);">Upcoming Quizzes</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.75);">Upcoming Quizzes</div>
           <div style="display:flex;gap:8px;">
             <button class="btn-ghost" onclick="loadAllDates()">&#x21BB; Refresh</button>
             <button class="btn-ghost" onclick="lockView()" style="border-color:rgba(255,68,102,0.3);color:rgba(255,68,102,0.6);">&#x1F512; Lock</button>
@@ -505,7 +565,7 @@
       <div id="view-detail" style="display:none;">
         <div class="view-header">
           <div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.5);">Bookings &mdash; <span id="view-date-label" style="color:#e8620a;"></span></div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.75);">Bookings &mdash; <span id="view-date-label" style="color:#e8620a;"></span></div>
           </div>
           <div style="display:flex;gap:8px;">
             <button class="btn-ghost" onclick="backToDates()">&larr; All Dates</button>
@@ -531,21 +591,21 @@
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
             <div>
               <div style="font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:0.1em;color:#fff;">&#x1F5A8; RESERVED TABLE SIGNS</div>
-              <div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:3px;">A5 signs, 2 per page &mdash; one for each booked table</div>
+              <div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:3px;">A5 signs, 2 per page &mdash; one for each booked table</div>
             </div>
             <button class="btn-ghost" id="signs-toggle" style="white-space:nowrap;">Set up signs</button>
           </div>
           <div id="signs-panel" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
             <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
               <div style="flex:1;min-width:150px;">
-                <label style="display:block;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:6px;">Extra blank signs</label>
+                <label style="display:block;font-size:0.8125rem;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.75);margin-bottom:6px;">Extra blank signs</label>
                 <input type="number" id="signs-generic" value="0" min="0" max="40"
                   style="width:100%;padding:10px 12px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-family:'DM Mono',monospace;font-size:0.95rem;">
-                <div style="font-size:0.58rem;color:rgba(255,255,255,0.28);margin-top:5px;">Generic &ldquo;Reserved for the Quiz&rdquo; signs for walk-ins</div>
+                <div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:5px;">Generic &ldquo;Reserved for the Quiz&rdquo; signs for walk-ins</div>
               </div>
               <button class="btn-primary" id="signs-print" style="white-space:nowrap;padding:12px 20px;">&#x1F5A8; Print Signs</button>
             </div>
-            <div id="signs-count" style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:10px;"></div>
+            <div id="signs-count" style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:10px;"></div>
           </div>
         </div>
 
@@ -560,7 +620,7 @@
       <div id="finance-gate">
         <div class="panel" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;">
           <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.08em;color:#fff;text-shadow:0 0 30px rgba(232,98,10,0.5);">FINANCE ACCESS</div>
-          <div style="font-size:0.7rem;color:rgba(255,255,255,0.4);letter-spacing:0.1em;">Enter the finance password</div>
+          <div style="font-size:0.7rem;color:rgba(255,255,255,0.75);letter-spacing:0.1em;">Enter the finance password</div>
           <div class="field" style="width:100%;max-width:280px;">
             <input type="password" id="fin-pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkFinancePassword()" style="text-align:center;font-size:1rem;letter-spacing:0.15em;">
           </div>
@@ -571,7 +631,7 @@
 
       <div id="finance-content" style="display:none;">
         <div class="view-header">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.5);">Finance Dashboard</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;color:rgba(255,255,255,0.75);">Finance Dashboard</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn-ghost" onclick="showWeekForm()" style="border-color:rgba(61,220,132,0.35);color:#3ddc84;">&#x1F4DD; Log Week</button>
             <button class="btn-ghost" onclick="showExpenseForm()">&#x2795; Claim</button>
@@ -588,7 +648,7 @@
               <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:0.08em;color:#fff;">Log a Week</div>
               <button class="btn-ghost" onclick="hideWeekForm()">&#x2715; Cancel</button>
             </div>
-            <div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-bottom:14px;">
+            <div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-bottom:14px;">
               Booked players and the running pot are worked out automatically.
             </div>
             <div class="form-grid">
@@ -612,7 +672,7 @@
                 <label>Jackpot Game <span style="color:#e8620a">*</span></label>
                 <input type="text" id="wk-game" list="wk-game-list" placeholder="e.g. Snakes" autocomplete="off">
                 <datalist id="wk-game-list"></datalist>
-                <div style="font-size:0.55rem;color:rgba(255,255,255,0.25);margin-top:4px;">Pick a past game or type a new one</div>
+                <div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:4px;">Pick a past game or type a new one</div>
               </div>
               <div class="field">
                 <label>Jackpot Given Away (£) <span style="color:#e8620a">*</span></label>
@@ -621,10 +681,10 @@
               <div class="field span-2">
                 <label>Added to Pay Fund (£)</label>
                 <input type="number" id="wk-split" min="0" step="0.01" value="15">
-                <div style="font-size:0.55rem;color:rgba(255,255,255,0.25);margin-top:4px;">Normally £15 &mdash; only change if it was different</div>
+                <div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:4px;">Normally £15 &mdash; only change if it was different</div>
               </div>
             </div>
-            <div id="wk-preview" style="background:rgba(26,0,64,0.5);border-radius:12px;padding:12px 14px;margin-top:4px;font-size:0.7rem;color:rgba(255,255,255,0.5);display:none;"></div>
+            <div id="wk-preview" style="background:rgba(26,0,64,0.5);border-radius:12px;padding:12px 14px;margin-top:4px;font-size:0.7rem;color:rgba(255,255,255,0.75);display:none;"></div>
             <div class="divider"></div>
             <button class="btn-primary" onclick="submitWeek()">SAVE WEEK</button>
             <div class="status-bar" id="week-status"></div>
@@ -652,7 +712,7 @@
                 <input type="text" id="exp-title" placeholder="e.g. Quiz sheets printing" autocomplete="off">
               </div>
               <div class="field span-2">
-                <label>Description <span style="color:rgba(255,255,255,0.25);font-size:0.55rem">(optional)</span></label>
+                <label>Description <span style="color:rgba(255,255,255,0.75);font-size:0.8125rem">(optional)</span></label>
                 <textarea id="exp-desc" placeholder="Any extra detail..." style="min-height:60px;"></textarea>
               </div>
             </div>
@@ -1010,7 +1070,9 @@ function renderCal() {
     const noQuiz = NO_QUIZ_DATES.includes(iso);
     const clickable = isThu && !isPast && !noQuiz;
 
-    const cell = document.createElement('div');
+    const cell = document.createElement(clickable ? 'button' : 'div');
+    if (clickable) { cell.type='button'; cell.setAttribute('aria-pressed', String(!!isSel)); }
+    cell.setAttribute('aria-label', d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + (noQuiz ? ', no quiz' : (!isThu || isPast ? ', unavailable' : '')));
     cell.textContent = day;
     cell.style.cssText = [
       'aspect-ratio:1',
@@ -1085,9 +1147,113 @@ function renderNoQuizBanner() {
   el.style.display = 'block';
   el.innerHTML =
     '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.25rem;letter-spacing:0.08em;color:#e8620a;">NO QUIZ THIS WEEK</div>'
-    + (reason ? '<div style="font-size:0.68rem;color:rgba(255,255,255,0.45);margin-top:4px;">' + escHtml(reason) + '</div>' : '')
+    + (reason ? '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:4px;">' + escHtml(reason) + '</div>' : '')
     + '<div style="font-size:0.72rem;color:rgba(255,255,255,0.6);margin-top:6px;letter-spacing:0.04em;">We\'ll be back on '
     + back.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}) + '</div>';
+}
+
+// ── Blocking a date beyond the weeks shown above ──
+function renderFarBlocker(list) {
+  var old = document.getElementById('far-blocker');
+  if (old && old.parentNode) old.parentNode.removeChild(old);
+
+  var wrap = document.createElement('div');
+  wrap.id = 'far-blocker';
+  wrap.style.cssText = 'background:rgba(26,0,64,0.5);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;margin-top:16px;';
+
+  wrap.innerHTML =
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:0.1em;color:rgba(255,255,255,0.55);">&#x1F6AB; CANCEL A DATE FURTHER AHEAD</div>'
+    + '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:3px;margin-bottom:12px;">For weeks beyond the list above &mdash; bank holidays, Christmas, and so on</div>'
+    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
+      + '<input type="date" id="far-date" style="flex:1;min-width:150px;padding:10px 12px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-family:DM Mono,monospace;font-size:0.85rem;">'
+      + '<button class="btn-ghost" id="far-btn" style="white-space:nowrap;border-color:rgba(255,68,102,0.35);color:#ff4466;">Cancel that week</button>'
+    + '</div>'
+    + '<div class="status-bar" id="far-status" style="margin-top:10px;"></div>'
+    + '<div id="far-list" style="margin-top:6px;"></div>';
+
+  list.appendChild(wrap);
+  document.getElementById('far-btn').addEventListener('click', blockFarDate);
+  renderFarList();
+}
+
+// Shows blocked dates that fall outside the 16 weeks listed above, so they
+// can still be undone without hunting for them.
+function renderFarList() {
+  var box = document.getElementById('far-list');
+  if (!box) return;
+  var horizon = isoDate(upcomingThursdays(16)[15]);
+  var today   = isoDate(new Date());
+  var far = NO_QUIZ_DATES.filter(function(d){ return d > horizon || d < today; }).sort();
+
+  box.innerHTML = '';
+  if (!far.length) return;
+
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'font-size:0.8125rem;letter-spacing:0.12em;color:rgba(255,255,255,0.75);margin:10px 0 6px;';
+  hdr.textContent = 'ALSO CANCELLED';
+  box.appendChild(hdr);
+
+  far.forEach(function(iso) {
+    var d = new Date(iso + 'T12:00:00');
+    var past = iso < today;
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:rgba(0,0,0,0.25);border-radius:10px;margin-bottom:6px;' + (past ? 'opacity:0.4;' : '');
+
+    var left = document.createElement('div');
+    left.innerHTML = '<span style="font-family:DM Mono,monospace;font-size:0.72rem;color:#fff;">'
+      + d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) + '</span>'
+      + (noQuizReasons[iso] ? '<span style="font-size:0.8125rem;color:rgba(255,255,255,0.75);"> &mdash; ' + escHtml(noQuizReasons[iso]) + '</span>' : '');
+
+    var btn = document.createElement('button');
+    btn.className = 'btn-ghost';
+    btn.style.cssText = 'white-space:nowrap;padding:5px 10px;font-size:0.8125rem;border-color:rgba(61,220,132,0.3);color:#3ddc84;';
+    btn.textContent = 'Undo';
+    btn.addEventListener('click', function(){ unblockFarDate(iso); });
+
+    row.appendChild(left); row.appendChild(btn);
+    box.appendChild(row);
+  });
+}
+
+async function blockFarDate() {
+  var status = document.getElementById('far-status');
+  var iso    = document.getElementById('far-date').value;
+  if (!iso) { setStatus(status,'error','Pick a date first.'); return; }
+
+  var d = new Date(iso + 'T12:00:00');
+  if (d.getDay() !== 4) { setStatus(status,'error','That is not a Thursday.'); return; }
+  if (NO_QUIZ_DATES.includes(iso)) { setStatus(status,'error','That week is already cancelled.'); return; }
+
+  var reason = (prompt('Why is there no quiz? (optional, e.g. Christmas Eve)') || '').trim();
+  setStatus(status,'loading','Cancelling...');
+  try {
+    var res  = await apiFetch(new URLSearchParams({ action:'addNoQuiz', password: hostPw, date: iso, reason: reason }));
+    var data = await res.json();
+    if (data.error) { setStatus(status,'error', data.error === 'unauthorised' ? 'Session expired — unlock again.' : data.error); return; }
+    await loadNoQuizDates();
+    renderFarList(); renderCal(); renderNoQuizBanner();
+    document.getElementById('far-date').value = '';
+    setStatus(status,'success','\u2713 ' + d.toLocaleDateString('en-GB',{day:'numeric',month:'long'}) + ' cancelled.');
+    setTimeout(function(){ setStatus(status,'',''); }, 3000);
+  } catch (e) {
+    setStatus(status,'error','Could not save. Please try again.');
+  }
+}
+
+async function unblockFarDate(iso) {
+  var status = document.getElementById('far-status');
+  setStatus(status,'loading','Restoring...');
+  try {
+    var res  = await apiFetch(new URLSearchParams({ action:'removeNoQuiz', password: hostPw, date: iso }));
+    var data = await res.json();
+    if (data.error) { setStatus(status,'error', data.error === 'unauthorised' ? 'Session expired — unlock again.' : data.error); return; }
+    await loadNoQuizDates();
+    renderFarList(); renderCal(); renderNoQuizBanner();
+    setStatus(status,'success','\u2713 Quiz is back on for that date.');
+    setTimeout(function(){ setStatus(status,'',''); }, 3000);
+  } catch (e) {
+    setStatus(status,'error','Could not update. Please try again.');
+  }
 }
 
 // ── No-quiz toggle, shown on each week's detail page ──
@@ -1104,8 +1270,8 @@ function renderNoQuizStrip() {
     strip.style.background  = 'rgba(255,68,102,0.1)';
     strip.style.border      = '1.5px solid rgba(255,68,102,0.4)';
     text.innerHTML = '<strong style="color:#ff4466;">&#x1F6AB; NO QUIZ THIS WEEK</strong>'
-      + (reason ? '<span style="color:rgba(255,255,255,0.4);"> &mdash; ' + escHtml(reason) + '</span>' : '')
-      + '<div style="font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:3px;">Nobody can book this date</div>';
+      + (reason ? '<span style="color:rgba(255,255,255,0.75);"> &mdash; ' + escHtml(reason) + '</span>' : '')
+      + '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:3px;">Nobody can book this date</div>';
     btn.textContent = 'Put the quiz back on';
     btn.style.cssText = 'white-space:nowrap;border-color:rgba(61,220,132,0.4);color:#3ddc84;';
     btn.onclick = function() { setNoQuiz(false); };
@@ -1113,7 +1279,7 @@ function renderNoQuizStrip() {
     strip.style.background  = 'rgba(26,0,64,0.5)';
     strip.style.border      = '1.5px solid rgba(255,255,255,0.08)';
     text.innerHTML = '<span style="color:rgba(255,255,255,0.55);">Quiz is on as normal this week.</span>'
-      + '<div style="font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:3px;">Cancel it and the date greys out for everyone</div>';
+      + '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:3px;">Cancel it and the date greys out for everyone</div>';
     btn.textContent = '\u{1F6AB} No quiz this week';
     btn.style.cssText = 'white-space:nowrap;border-color:rgba(255,68,102,0.35);color:#ff4466;';
     btn.onclick = function() { setNoQuiz(true); };
@@ -1151,7 +1317,7 @@ async function setNoQuiz(block) {
       btn.disabled = false; return;
     }
     await loadNoQuizDates();
-    renderNoQuizStrip(); renderCal(); renderNoQuizBanner();
+    renderNoQuizStrip(); renderCal(); renderNoQuizBanner(); renderFarList();
     setStatus(status, 'success', block ? '\u2713 Cancelled — this date is now blocked.' : '\u2713 Quiz is back on for this date.');
     setTimeout(function(){ setStatus(status, '', ''); }, 3000);
   } catch (e) {
@@ -1170,6 +1336,7 @@ function selectedDate() { return calSelectedDate ? isoDate(calSelectedDate) : is
 
 function toggleRecurring() {
   recurringEnabled = !recurringEnabled;
+  document.getElementById('recurring-row').setAttribute('aria-checked', String(recurringEnabled));
   const box = document.getElementById('recurring-box');
   const tick = document.getElementById('recurring-tick');
   if (recurringEnabled) { box.style.background='rgba(232,98,10,0.2)'; box.style.borderColor='#e8620a'; tick.style.display='block'; }
@@ -1286,11 +1453,11 @@ function setStatusProgress(el, done, total) {
   el.className = 'status-bar loading';
   el.innerHTML = '<div style="width:100%;">'
     + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span class="spinner"></span><span>Booking quiz ' + done + ' of ' + total + '…</span></div>'
-    + '<div style="font-size:0.6rem;color:rgba(255,255,255,0.35);letter-spacing:0.1em;margin-bottom:6px;">This may take a minute or two &mdash; please do not close the page</div>'
+    + '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);letter-spacing:0.1em;margin-bottom:6px;">This may take a minute or two &mdash; please do not close the page</div>'
     + '<div style="background:rgba(255,255,255,0.08);border-radius:99px;height:6px;overflow:hidden;">'
       + '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#e8620a,#9b2fc9);border-radius:99px;transition:width 0.3s ease;"></div>'
     + '</div>'
-    + '<div style="text-align:right;font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:4px;">' + pct + '%</div>'
+    + '<div style="text-align:right;font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:4px;">' + pct + '%</div>'
     + '</div>';
 }
 
@@ -1330,7 +1497,7 @@ async function lookupBooking() {
 
     if (!results.length) {
       errEl.innerHTML = 'No bookings found under that number.'
-        + '<br><span style="color:rgba(255,255,255,0.4);">Message the <a href="https://www.facebook.com/profile.php?id=61580497889819" target="_blank" style="color:#e8620a;text-decoration:none;">Damson Quizzes Facebook page</a> if you continue to have problems.</span>';
+        + '<br><span style="color:rgba(255,255,255,0.75);">Message the <a href="https://www.facebook.com/profile.php?id=61580497889819" target="_blank" style="color:#e8620a;text-decoration:none;">Damson Quizzes Facebook page</a> if you continue to have problems.</span>';
       errEl.style.display = 'block';
       if (findBtn) { findBtn.disabled=false; findBtn.textContent='FIND MY BOOKINGS'; }
       return;
@@ -1360,11 +1527,11 @@ function showBookingList(arr) {
     card.addEventListener('mouseout',  function() { this.style.borderColor='rgba(232,98,10,0.35)'; this.style.background='rgba(26,0,64,0.5)'; });
     card.innerHTML = '<div>'
       + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.15rem;letter-spacing:0.06em;color:#fff;">' + esc(dateStr) + '</div>'
-      + (b.team ? '<div style="font-size:0.65rem;color:rgba(255,255,255,0.4);margin-top:2px;">' + esc(b.team) + '</div>' : '')
+      + (b.team ? '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:2px;">' + esc(b.team) + '</div>' : '')
       + '</div>'
       + '<div style="text-align:right;flex-shrink:0;">'
         + '<div style="font-size:0.75rem;color:#e8620a;">' + fmtTime(b.time) + '</div>'
-        + '<div style="font-size:0.65rem;color:rgba(255,255,255,0.35);margin-top:2px;">&#x1F465; ' + esc(b.players) + ' player' + (b.players==1?'':'s') + '</div>'
+        + '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:2px;">&#x1F465; ' + esc(b.players) + ' player' + (b.players==1?'':'s') + '</div>'
       + '</div>'
       + '<div style="color:rgba(232,98,10,0.6);font-size:1rem;">&#x203A;</div>';
     container.appendChild(card);
@@ -1557,12 +1724,12 @@ function makeDateRow(r, list) {
   row.innerHTML = '<div>'
     + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;letter-spacing:0.06em;color:#fff;text-shadow:0 0 16px rgba(232,98,10,0.4);">' + dateStr + '</div>'
     + (isBlocked
-        ? '<div style="font-size:0.58rem;color:#ff4466;letter-spacing:0.12em;margin-top:3px;">&#x1F6AB; NO QUIZ</div>'
-        : '<div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:2px;">' + tables + ' table' + (tables===1?'':'s') + '</div>')
+        ? '<div style="font-size:0.8125rem;color:#ff4466;letter-spacing:0.12em;margin-top:3px;">&#x1F6AB; NO QUIZ</div>'
+        : '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:2px;">' + tables + ' table' + (tables===1?'':'s') + '</div>')
     + '</div>'
     + '<div style="text-align:right;flex-shrink:0;">'
       + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.6rem;color:' + (players ? '#e8620a' : 'rgba(255,255,255,0.25)') + ';line-height:1;">' + players + '</div>'
-      + '<div style="font-size:0.55rem;color:rgba(255,255,255,0.3);letter-spacing:0.15em;">PLAYERS</div>'
+      + '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);letter-spacing:0.15em;">PLAYERS</div>'
     + '</div>'
     + '<div style="color:rgba(232,98,10,0.6);font-size:1.2rem;">&#x203A;</div>';
   list.appendChild(row);
@@ -1593,6 +1760,7 @@ async function loadAllDates() {
       loadFutureWeeks(list, futureBtn);
     });
     list.appendChild(futureBtn);
+    renderFarBlocker(list);
 
   } catch(e) {
     list.innerHTML = '<div class="empty-state" style="color:#ff4466;"><span class="empty-icon">&#x26A0;</span>Could not load. Check script URL.</div>';
@@ -1613,6 +1781,7 @@ async function loadFutureWeeks(list, btn) {
     if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
     // Every upcoming Thursday is listed so any of them can be opened and cancelled
     results.forEach(function(r) { makeDateRow(r, list); });
+    renderFarBlocker(list);
   } catch(e) {
     if (btn) { btn.disabled=false; btn.textContent='See future weeks (retry)'; }
   }
@@ -1903,7 +2072,7 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
   pendingExpenses = pendingExpenses || 0;
   upcomingBookings = upcomingBookings || [];
   const dash = document.getElementById('finance-dashboard');
-  const played = weeks.filter(function(w){ return w['Takings'] !== '' && w['Takings'] !== 0 && w['Takings'] !== undefined; });
+  const played = (weeks || []).filter(function(w){ return w['Takings'] !== '' && w['Takings'] != null && Number.isFinite(Number(w['Takings'])); }).slice().sort(function(a,b){ return new Date(a['Date']) - new Date(b['Date']) || Number(a['Week No.']) - Number(b['Week No.']); });
 
   if (!played.length) {
     dash.innerHTML = '<div class="empty-state"><span class="empty-icon">&#x1F4CA;</span>No finance data yet.</div>';
@@ -1917,14 +2086,14 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
   const avgPlayers   = played.reduce(function(s,w){ return s+(parseFloat(w['Players'])||0); }, 0) / played.length;
   const avgTeams     = played.reduce(function(s,w){ return s+(parseFloat(w['Teams'])||0); }, 0) / played.length;
   const avgBooked    = played.reduce(function(s,w){ return s+(parseFloat(w['Booked Players'])||0); }, 0) / played.length;
-  const takingsPerPlayer = avgTakings / avgPlayers;
+  const takingsPerPlayer = avgPlayers ? avgTakings / avgPlayers : 0;
 
   // ── No-show rate ──
   const noShowRate = played.filter(function(w){ return parseFloat(w['Booked Players'])>0; }).reduce(function(s,w){
     var booked = parseFloat(w['Booked Players'])||0;
     var actual = parseFloat(w['Players'])||0;
     return s + Math.max(0, booked - actual) / booked;
-  }, 0) / played.filter(function(w){ return parseFloat(w['Booked Players'])>0; }).length;
+  }, 0) / (played.filter(function(w){ return parseFloat(w['Booked Players'])>0; }).length || 1);
 
   // ── Pot numbers ──
   const rawPot     = parseFloat(played[played.length-1]['Pot'])||0;
@@ -1982,7 +2151,7 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
   const latestTakings = parseFloat(latest['Takings'])||0;
   const latestBooked  = parseFloat(latest['Booked Players'])||0;
   const latestDate    = labels[labels.length-1];
-  const latestJackpot = latest['Jackpot Game'] || '—';
+  const latestJackpot = esc(latest['Jackpot Game'] || '—');
   const revPerPlayer  = latestPlayers ? (latestTakings/latestPlayers) : 0;
 
   function delta(val, avg, isMoney) {
@@ -1995,12 +2164,12 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
     return '<div class="fin-card">'
       + '<div class="fin-card-label">'+label+'</div>'
       + '<div class="fin-card-value'+(valueColor?'" style="color:'+valueColor+'"':'"')+'>'+value+'</div>'
-      + (sub ? '<div style="font-size:0.6rem;color:rgba(255,255,255,0.35);margin-top:4px;">'+sub+'</div>' : '')
+      + (sub ? '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:4px;">'+sub+'</div>' : '')
       + '</div>';
   }
 
   function sectionTitle(t) {
-    return '<div style="font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:0.14em;color:rgba(255,255,255,0.35);margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.07);">'+t+'</div>';
+    return '<h2 class="fin-section-heading">'+t+'</h2>';
   }
 
   // ── BUILD HTML ──
@@ -2015,7 +2184,7 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
     '#9b2fc9');
   html += statCard('Giveaway Pot', fmtGBP(giveawayPot), 'Case minus Pay Fund', '#3ddc84');
   html += '</div>';
-  html += '<div style="font-size:0.55rem;color:rgba(255,255,255,0.2);letter-spacing:0.08em;margin-bottom:14px;text-align:center;">Paid expenses deducted from both Case &amp; Pay Fund</div>';
+  html += '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);letter-spacing:0.08em;margin-bottom:14px;text-align:center;">Paid expenses deducted from both Case &amp; Pay Fund</div>';
 
   // TAKINGS SECTION
   html += sectionTitle('TAKINGS');
@@ -2048,19 +2217,19 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
   html += '<div style="background:rgba(100,30,160,0.4);border-radius:12px;padding:14px;">'
     + '<div class="fin-card-label" style="margin-bottom:4px;">Currently Booked</div>'
     + '<div style="font-family:Bebas Neue,sans-serif;font-size:2rem;color:#fff;line-height:1;">'+(bookedPlayers||'0')+'</div>'
-    + '<div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:4px;">'+(bookedTeams)+' table'+(bookedTeams===1?'':'s')+'</div>'
+    + '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:4px;">'+(bookedTeams)+' table'+(bookedTeams===1?'':'s')+'</div>'
     + '</div>';
   html += '<div style="background:rgba(100,30,160,0.4);border-radius:12px;padding:14px;">'
     + '<div class="fin-card-label" style="margin-bottom:4px;">Predicted Players</div>'
-    + '<div style="font-family:Bebas Neue,sans-serif;font-size:2rem;color:#e8620a;line-height:1;">'+(predictedPlayers||Math.round(avgPlayers))+'</div>'
-    + '<div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:4px;">at '+showRate+'% show rate</div>'
+    + '<div style="font-family:Bebas Neue,sans-serif;font-size:2rem;color:#e8620a;line-height:1;">'+predictedPlayers+'</div>'
+    + '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:4px;">at '+showRate+'% show rate</div>'
     + '</div>';
   html += '</div>';
   html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">';
   html += '<div style="background:rgba(100,30,160,0.4);border-radius:12px;padding:14px;">'
     + '<div class="fin-card-label" style="margin-bottom:4px;">Predicted Takings</div>'
-    + '<div style="font-family:Bebas Neue,sans-serif;font-size:2rem;color:#3ddc84;line-height:1;">'+fmtGBP(predictedTakings||avgTakings)+'</div>'
-    + '<div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:4px;">'+fmtGBP(takingsPerPlayer)+'/player avg</div>'
+    + '<div style="font-family:Bebas Neue,sans-serif;font-size:2rem;color:#3ddc84;line-height:1;">'+fmtGBP(predictedTakings)+'</div>'
+    + '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:4px;">'+fmtGBP(takingsPerPlayer)+'/player avg</div>'
     + '</div>';
   (function(){
     var now = new Date();
@@ -2089,11 +2258,11 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
     html += '<div id="quiz-countdown" data-quiz="'+quiz.toISOString()+'" style="background:rgba(100,30,160,0.4);border-radius:12px;padding:14px;">'
       + '<div class="fin-card-label" style="margin-bottom:4px;">Quiz Countdown</div>'
       + '<div id="countdown-val" style="font-family:Bebas Neue,sans-serif;font-size:1.6rem;color:#e8620a;line-height:1.1;">'+countdown+'</div>'
-      + '<div id="countdown-sub" style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:4px;">'+sub+'</div>'
+      + '<div id="countdown-sub" style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:4px;">'+sub+'</div>'
       + '</div>';
   })();
   html += '</div>';
-  html += '<div style="font-size:0.55rem;color:rgba(255,255,255,0.2);letter-spacing:0.06em;margin-top:10px;">Prediction: booked &times; show rate + avg walk-ins (~'+Math.round(avgWalkIns)+'/wk). Based on '+played.length+' weeks of data.</div>';
+  html += '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);letter-spacing:0.06em;margin-top:10px;">Prediction: booked &times; show rate + avg walk-ins (~'+Math.round(avgWalkIns)+'/wk). Based on '+played.length+' weeks of data.</div>';
   html += '</div>';
 
   // LATEST WEEK
@@ -2102,136 +2271,200 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
   html += '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px 16px;">'
     + '<div class="fin-card-label" style="margin-bottom:4px;">Teams</div>'
     + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.8rem;color:#fff;">'+latestTeams+'</div>'
-    + '<div style="font-size:0.65rem;margin-top:4px;">'+delta(latestTeams,avgTeams,false)+'</div></div>';
+    + '<div style="font-size:0.8125rem;margin-top:4px;">'+delta(latestTeams,avgTeams,false)+'</div></div>';
   html += '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px 16px;">'
     + '<div class="fin-card-label" style="margin-bottom:4px;">Players</div>'
     + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.8rem;color:#fff;">'+latestPlayers+'</div>'
-    + '<div style="font-size:0.65rem;margin-top:4px;">'+delta(latestPlayers,avgPlayers,false)+'</div></div>';
+    + '<div style="font-size:0.8125rem;margin-top:4px;">'+delta(latestPlayers,avgPlayers,false)+'</div></div>';
   html += '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px 16px;">'
     + '<div class="fin-card-label" style="margin-bottom:4px;">Takings</div>'
     + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.8rem;color:#fff;">'+fmtGBP(latestTakings)+'</div>'
-    + '<div style="font-size:0.65rem;margin-top:4px;">'+delta(latestTakings,avgTakings,true)+'</div></div>';
+    + '<div style="font-size:0.8125rem;margin-top:4px;">'+delta(latestTakings,avgTakings,true)+'</div></div>';
   html += '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px 16px;">'
     + '<div class="fin-card-label" style="margin-bottom:4px;">Revenue/Player</div>'
     + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.8rem;color:#fff;">'+fmtGBP(revPerPlayer)+'</div>'
-    + '<div style="font-size:0.65rem;margin-top:4px;">'+delta(revPerPlayer,takingsPerPlayer,true)+'</div></div>';
+    + '<div style="font-size:0.8125rem;margin-top:4px;">'+delta(revPerPlayer,takingsPerPlayer,true)+'</div></div>';
   html += '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px 16px;">'
     + '<div class="fin-card-label" style="margin-bottom:4px;">Booked vs Actual</div>'
-    + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.8rem;color:#fff;">'+latestBooked+' <span style="font-size:0.9rem;color:rgba(255,255,255,0.35);">booked</span></div>'
-    + '<div style="font-size:0.65rem;margin-top:4px;color:'+(latestPlayers>=latestBooked?'#3ddc84':'#ff4466')+';"> '+(latestPlayers>=latestBooked?'&#x25B2; ':'&#x25BC; ')+Math.abs(latestPlayers-latestBooked)+' players '+(latestPlayers>=latestBooked?'more':'fewer')+' than booked</div></div>';
+    + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.8rem;color:#fff;">'+latestBooked+' <span style="font-size:0.9rem;color:rgba(255,255,255,0.75);">booked</span></div>'
+    + '<div style="font-size:0.8125rem;margin-top:4px;color:'+(latestPlayers>=latestBooked?'#3ddc84':'#ff4466')+';"> '+(latestPlayers>=latestBooked?'&#x25B2; ':'&#x25BC; ')+Math.abs(latestPlayers-latestBooked)+' players '+(latestPlayers>=latestBooked?'more':'fewer')+' than booked</div></div>';
   html += '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px 16px;">'
     + '<div class="fin-card-label" style="margin-bottom:4px;">Jackpot Game</div>'
     + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.4rem;color:#e8620a;line-height:1.2;">'+latestJackpot+'</div>'
-    + '<div style="font-size:0.65rem;margin-top:4px;color:rgba(255,255,255,0.3);">last week</div></div>';
+    + '<div style="font-size:0.8125rem;margin-top:4px;color:rgba(255,255,255,0.75);">last week</div></div>';
   html += '</div>';
 
-  // CHARTS
-  html += '<div class="chart-wrap"><div class="chart-title">Takings per Week</div><canvas id="chart-takings" height="160"></canvas></div>';
-  html += '<div class="chart-wrap"><div class="chart-title">Giveaway Pot &amp; Projection</div><canvas id="chart-pot" height="180"></canvas></div>';
-  html += '<div style="background:rgba(26,0,64,0.4);border-radius:10px;padding:10px 12px;font-size:0.6rem;color:rgba(255,255,255,0.4);line-height:1.7;margin-bottom:12px;">'
-    + 'Pot moves by takings minus jackpot paid out. Averaging ' + fmtGBP(avgTakingsWk) + ' in and '
-    + fmtGBP(avgJackpotWk) + ' out per week, so <strong style="color:#e8620a;">' + (netPerWeek>=0?'+':'') + fmtGBP(netPerWeek) + '/week</strong> expected.<br>'
-    + 'Jackpot has gone ' + winWeeks.length + ' time' + (winWeeks.length===1?'':'s') + ' in ' + n + ' weeks ('
-    + Math.round(winRate*100) + '% of weeks, averaging ' + fmtGBP(avgWin) + ' when it does).'
-    + '</div>';
-  html += '<div class="chart-wrap"><div class="chart-title">Players &mdash; Booked vs Actual</div><canvas id="chart-players" height="160"></canvas></div>';
-  html += '<div class="chart-wrap"><div class="chart-title">Revenue per Player by Week</div><canvas id="chart-rev" height="140"></canvas></div>';
-
-  dash.innerHTML = html;
-
-  var axisCfg = {
-    x: { ticks:{color:'rgba(255,255,255,0.4)',font:{family:'DM Mono',size:10}}, grid:{color:'rgba(255,255,255,0.05)'} },
-    y: { ticks:{color:'rgba(255,255,255,0.4)',font:{family:'DM Mono',size:10}}, grid:{color:'rgba(255,255,255,0.05)'} }
-  };
-  var legendCfg = { labels:{color:'rgba(255,255,255,0.5)',font:{family:'DM Mono',size:10}} };
-
-  finCharts.takings = new Chart(document.getElementById('chart-takings'), {
-    type: 'bar',
-    data: { labels: labels, datasets: [{
-      label: 'Takings', data: played.map(function(w){ return parseFloat(w['Takings'])||0; }),
-      backgroundColor: played.map(function(w,i){ return i===played.length-1?'rgba(232,98,10,1)':'rgba(232,98,10,0.55)'; }),
-      borderColor: '#e8620a', borderWidth: 1, borderRadius: 6
-    }]},
-    options: { responsive:true, plugins:{ legend:legendCfg, tooltip:{ callbacks:{ label:function(ctx){ return fmtGBP(ctx.parsed.y); } } } }, scales:axisCfg }
-  });
-
-  // ── Pot chart: actual, plus three anchored projection scenarios ──
-  var projLabels = labels.slice();
-  for (var pi=1; pi<=weeksProj; pi++) projLabels.push('+'+pi+'wk');
-
-  // Every projection line starts on the last real data point so the chart
-  // reads as one continuous story.
-  function projSeries(perWeek) {
-    var arr = giveawayVals.map(function(){ return null; });
-    arr[n-1] = currentGiveaway;
-    for (var i=1; i<=weeksProj; i++) {
-      arr.push(parseFloat((currentGiveaway + perWeek*i).toFixed(2)));
-    }
-    return arr;
+  // Finance charts: consistent units, honest gaps and readable tables.
+  function chartCard(id, title, subtitle, extraClass) {
+    return '<section class="chart-wrap '+(extraClass||'')+'" aria-labelledby="'+id+'-title">'
+      + '<div class="chart-header"><div><h3 class="chart-title" id="'+id+'-title">'+title+'</h3><p class="chart-sub">'+subtitle+'</p></div></div>'
+      + '<div class="chart-stage"><canvas id="'+id+'" role="img" aria-label="'+title+'. Exact values are in the table below."></canvas></div>'
+      + '<div id="'+id+'-table"></div></section>';
   }
-
-  var expected = projSeries(netPerWeek);
-  var noWins   = projSeries(avgTakingsWk);
-
-  // Pessimistic case: takings hold up but the jackpot goes at roughly twice
-  // the usual rate. Floored at the £150 minimum, since the pot gets topped
-  // back up rather than going below it.
-  var badLuckRate = avgTakingsWk - Math.min(avgTakingsWk, avgJackpotWk * 2);
-  var badLuck = giveawayVals.map(function(){ return null; });
-  badLuck[n-1] = currentGiveaway;
-  for (var bi=1; bi<=weeksProj; bi++) {
-    badLuck.push(parseFloat(Math.max(150, currentGiveaway + badLuckRate*bi).toFixed(2)));
+  const oldSummary = html;
+  html = chartCard('chart-takings','Weekly takings', 'Income for each recorded quiz · latest week highlighted');
+  html += chartCard('chart-pot','Giveaway pot', 'Recorded balance and a 10-week outlook. Dashed lines are scenarios, not guaranteed returns.', 'pot-chart');
+  html += chartCard('chart-players','Booked vs attended', 'Compare booked players with total attendance, including walk-ins.');
+  html += chartCard('chart-rev','Revenue per player', 'Weekly takings divided by attendance · gaps indicate no recorded players.');
+  dash.innerHTML = oldSummary;
+  const summaryStart = Array.from(dash.children).find(function(el){return el.textContent === 'TAKINGS';});
+  const summaryDetails = document.createElement('details');
+  summaryDetails.className = 'finance-details';
+  summaryDetails.open = true;
+  summaryDetails.innerHTML = '<summary>Weekly summary &amp; attendance</summary>';
+  if (summaryStart) {
+    let el=summaryStart;
+    while(el) {const next=el.nextElementSibling;summaryDetails.appendChild(el);el=next;}
   }
+  dash.insertAdjacentHTML('beforeend', html);
+  if (summaryStart) document.getElementById('chart-takings').closest('.chart-wrap').after(summaryDetails);
 
-  var thresholdData = projLabels.map(function(){ return 150; });
-
-  finCharts.pot = new Chart(document.getElementById('chart-pot'), {
-    type: 'line',
-    data: { labels: projLabels, datasets: [
-      { label:'Actual', data: giveawayVals.concat(new Array(weeksProj).fill(null)),
-        borderColor:'#3ddc84', backgroundColor:'rgba(61,220,132,0.12)', borderWidth:3,
-        tension:0.35, fill:true, pointRadius:4, pointBackgroundColor:'#3ddc84' },
-      { label:'If nobody wins', data: noWins,
-        borderColor:'rgba(61,220,132,0.5)', fill:false, borderDash:[2,3], borderWidth:1.5,
-        tension:0.2, pointRadius:0 },
-      { label:'Expected', data: expected,
-        borderColor:'#e8620a', fill:false, borderDash:[6,4], borderWidth:2.5,
-        tension:0.2, pointRadius:3, pointBackgroundColor:'#e8620a' },
-      { label:'Unlucky run', data: badLuck,
-        borderColor:'rgba(255,153,68,0.5)', fill:false, borderDash:[2,3], borderWidth:1.5,
-        tension:0.2, pointRadius:0 },
-      { label:'\u00a3150 Min', data: thresholdData,
-        borderColor:'#ff4466', borderWidth:2, borderDash:[4,3], pointRadius:0, fill:false, tension:0 }
-    ]},
-    options: {
-      responsive:true,
+  const chartColors = {orange:'#ff963e',purple:'#c18aff',green:'#76d8bc',muted:'#a99bb9'};
+  const moneyAxis = function(v){return '£'+Number(v).toLocaleString('en-GB',{maximumFractionDigits:2});};
+  function options(unit, legend, projected) {
+    return {
+      responsive:true, maintainAspectRatio:false,
+      animation:window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : {duration:350},
+      interaction:{mode:'index',intersect:false},
+      layout:{padding:{top:projected?30:8,right:12}},
+      elements:{line:{borderWidth:2.5,tension:0},point:{radius:2.5,hoverRadius:5,hitRadius:12},bar:{borderWidth:0,borderRadius:5,maxBarThickness:36}},
       plugins:{
-        legend:legendCfg,
-        tooltip:{ callbacks:{ label:function(ctx){ return ctx.raw!==null?(ctx.dataset.label+': '+fmtGBP(ctx.raw)):''; } } }
+        legend:{display:legend,position:'bottom',align:'start',labels:{color:'#d6cde1',usePointStyle:true,boxWidth:9,boxHeight:9,padding:20,font:{family:'Arial',size:13}}},
+        tooltip:{backgroundColor:'#f5f0fb',titleColor:'#241a31',bodyColor:'#362a42',padding:14,cornerRadius:9,displayColors:true,titleFont:{size:14},bodyFont:{size:13},callbacks:{label:function(ctx){return ctx.dataset.label+': '+(unit==='money'?fmtGBP(ctx.parsed.y):ctx.parsed.y+' players');}}}
       },
-      scales:axisCfg
+      scales:{
+        x:{border:{display:false},grid:{display:false},ticks:{color:'#b9b2c8',maxRotation:0,autoSkip:true,maxTicksLimit:window.innerWidth<600?5:10,padding:10,font:{family:'Arial',size:12}},title:{display:!!projected,text:projected?'Quiz date':'',color:'#b9b2c8',font:{size:12}}},
+        y:{beginAtZero:true,border:{display:false},grid:{color:'rgba(220,210,240,0.08)',drawTicks:false},ticks:{color:'#b9b2c8',padding:10,maxTicksLimit:6,precision:unit==='players'?0:undefined,callback:unit==='money'?moneyAxis:undefined,font:{family:'Arial',size:12}},title:{display:true,text:unit==='money'?'GBP (£)':'Players',color:'#b9b2c8',font:{size:12}}}
+      }
+    };
+  }
+  function dataTable(id, columns, rows) {
+    document.getElementById(id+'-table').innerHTML='<details class="chart-data"><summary>View data table</summary><div class="table-scroll" tabindex="0" role="region" aria-label="'+id.replace('chart-','')+' data"><table><thead><tr>'
+      + columns.map(function(c){return '<th scope="col">'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>'
+      + rows.map(function(row){return '<tr>'+row.map(function(v,i){return (i?'<td>':'<th scope="row">')+esc(String(v))+(i?'</td>':'</th>');}).join('')+'</tr>';}).join('')+'</tbody></table></div></details>';
+  }
+  const bookedVals=played.map(function(w){return Number(w['Booked Players'])||0;});
+  const actualVals=played.map(function(w){return Number(w['Players'])||0;});
+  const revVals=played.map(function(w){const p=Number(w['Players'])||0;return p>0?Number(((Number(w['Takings'])||0)/p).toFixed(2)):null;});
+  const fullDates=played.map(function(w,i){const d=new Date(w['Date']);return isNaN(d)?labels[i]:d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});});
+  dataTable('chart-takings',['Quiz date','Takings'],played.map(function(w,i){return [fullDates[i],fmtGBP(takingsVals[i])];}));
+  dataTable('chart-players',['Quiz date','Booked','Attended'],played.map(function(w,i){return [fullDates[i],bookedVals[i],actualVals[i]];}));
+  dataTable('chart-rev',['Quiz date','Revenue per player'],played.map(function(w,i){return [fullDates[i],revVals[i]===null?'Not available':fmtGBP(revVals[i])];}));
+
+  const projLabels=labels.slice();
+  const projFullDates=fullDates.slice();
+  const lastRecordedDate=new Date(played[n-1]['Date']);
+  for(let i=1;i<=weeksProj;i++) {
+    const date=new Date(lastRecordedDate);
+    date.setDate(date.getDate()+7*i);
+    projLabels.push(isNaN(date)?'Date unavailable':date.toLocaleDateString('en-GB',{day:'numeric',month:'short'}));
+    projFullDates.push(isNaN(date)?'Date unavailable':date.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}));
+  }
+  const forecastDivider={
+    id:'forecastDivider',
+    afterDraw:function(chart) {
+      const {ctx,chartArea,scales}=chart;
+      if(!chartArea)return;
+      const x=scales.x.getPixelForValue(n-1);
+      ctx.save();
+      ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=1.5;ctx.setLineDash([2,5]);
+      ctx.beginPath();ctx.moveTo(x,chartArea.top);ctx.lineTo(x,chartArea.bottom);ctx.stroke();
+      ctx.setLineDash([]);ctx.font='12px Arial';ctx.fillStyle='#ded0ee';ctx.textBaseline='bottom';
+      const actualWidth=ctx.measureText('Actual').width;
+      ctx.textAlign='right';
+      if(x-chartArea.left>=actualWidth+12)ctx.fillText('Actual',x-8,chartArea.top-10);
+      else {ctx.textAlign='left';ctx.fillText('Actual',chartArea.left,chartArea.top-10);}
+      ctx.textAlign='left';
+      ctx.fillText('Predicted',Math.min(Math.max(x+8,chartArea.left+actualWidth+20),chartArea.right-ctx.measureText('Predicted').width),chartArea.top-10);
+      ctx.restore();
     }
+  };
+  function projSeries(rate){const vals=Array(n-1).fill(null).concat([currentGiveaway]);for(let i=1;i<=weeksProj;i++)vals.push(Number((currentGiveaway+rate*i).toFixed(2)));return vals;}
+  const expected=projSeries(netPerWeek), noWins=projSeries(avgTakingsWk);
+  // Preserve the original scenario assumption and £150 minimum.
+  const badLuckRate=avgTakingsWk-Math.min(avgTakingsWk,avgJackpotWk*2);
+  const badLuck=projSeries(badLuckRate).map(function(v,i){return i<n?v:Math.max(150,v);});
+  dataTable('chart-pot',['Quiz / forecast','Actual','Expected','No wins','Unlucky run'],projLabels.map(function(label,i){return [projFullDates[i],i<n?fmtGBP(giveawayVals[i]):'—',i>=n-1?fmtGBP(expected[i]):'—',i>=n-1?fmtGBP(noWins[i]):'—',i>=n-1?fmtGBP(badLuck[i]):'—'];}));
+  document.getElementById('chart-pot-table').insertAdjacentHTML('afterbegin','<p class="chart-note">Average weekly takings: '+fmtGBP(avgTakingsWk)+' · Average payout: '+fmtGBP(avgJackpotWk)+'. Expected change: '+(netPerWeek>=0?'+':'')+fmtGBP(netPerWeek)+'/week, based on '+n+' recorded quizzes. Scenarios use historical averages; unlucky run assumes twice the average payout, capped at takings, with a £150 floor.</p>');
+  // Compare games using recorded outcomes; missing payouts are not zero wins.
+  const gamesByName=new Map();
+  played.forEach(function(week){
+    const name=String(week['Jackpot Game']||'').trim().replace(/\s+/g,' ')||'Unspecified game';
+    const key=name.toLocaleLowerCase('en-GB');
+    if(!gamesByName.has(key))gamesByName.set(key,{name:name,quizzes:0,recorded:0,wins:0,total:0,biggest:0});
+    const game=gamesByName.get(key);game.quizzes++;
+    const raw=week['Jackpot Winnings'];
+    if(raw==null||String(raw).trim()===''||!Number.isFinite(Number(raw))||Number(raw)<0)return;
+    const paid=Number(raw);game.recorded++;game.total+=paid;
+    if(paid>0){game.wins++;game.biggest=Math.max(game.biggest,paid);}
+  });
+  const gameRows=Array.from(gamesByName.values()).map(function(g){
+    g.average=g.recorded?g.total/g.recorded:null;
+    g.winAverage=g.wins?g.total/g.wins:null;
+    g.frequency=g.recorded?100*g.wins/g.recorded:null;
+    return g;
+  });
+  const comparison=document.createElement('section');
+  comparison.className='chart-wrap jackpot-comparison';
+  comparison.setAttribute('aria-labelledby','jackpot-comparison-title');
+  comparison.innerHTML='<div class="chart-header"><div><h3 class="chart-title" id="jackpot-comparison-title">Jackpot games — head to head</h3><p class="chart-sub">See which games have paid out the most, and compare their typical payouts.</p></div></div>'
+    +'<div class="field" style="max-width:320px;margin-bottom:20px"><label for="jackpot-metric">Compare games by</label><select id="jackpot-metric"><option value="total">Total paid out</option><option value="average">Average payout per quiz</option><option value="winAverage">Average winning payout</option><option value="frequency">Quizzes with a payout (%)</option><option value="biggest">Biggest payout</option></select></div>'
+    +'<div id="jackpot-bars" aria-live="polite"></div>'
+    +'<div class="table-scroll" tabindex="0" role="region" aria-label="Jackpot game comparison"><table><caption style="text-align:left;padding:12px 0;color:#ded0ee">All recorded quizzes, grouped by game</caption><thead><tr><th scope="col">Game</th><th scope="col">Quizzes</th><th scope="col">Known outcomes</th><th scope="col">Paid out</th><th scope="col">Total</th><th scope="col">Avg / quiz</th><th scope="col">Avg / win</th><th scope="col">Payout rate</th><th scope="col">Biggest</th></tr></thead><tbody id="jackpot-game-rows"></tbody></table></div>'
+    +'<p class="chart-note">Average per quiz includes recorded £0 payouts. Average per win includes only quizzes with a payout. Payout rate is the percentage of known outcomes that paid more than £0. Missing payouts are excluded from averages and rates. Games played fewer times have less evidence; historical results do not predict the next win.</p>';
+  dash.appendChild(comparison);
+  function renderGameComparison(metric){
+    const rows=gameRows.slice().sort(function(a,b){
+      const av=a[metric],bv=b[metric];
+      if(av===null)return bv===null?a.name.localeCompare(b.name):1;
+      if(bv===null)return -1;
+      return bv-av||a.name.localeCompare(b.name);
+    });
+    const max=Math.max(0,...rows.map(function(g){return g[metric]||0;}));
+    const money=function(v){return v===null?'—':fmtGBP(v);};
+    const percent=function(v){return v===null?'—':v.toFixed(1)+'%';};
+    document.getElementById('jackpot-bars').innerHTML=rows.map(function(g){
+      const value=g[metric];
+      const display=value===null?'No recorded outcomes':metric==='frequency'?percent(value):money(value);
+      return '<div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;gap:16px;font-size:14px;margin-bottom:6px"><span style="overflow-wrap:anywhere">'+esc(g.name)+' <span style="color:#ded0ee;font-size:12px">('+g.recorded+' known outcome'+(g.recorded===1?'':'s')+')</span></span><strong style="white-space:nowrap">'+display+'</strong></div><div style="height:12px;border-radius:6px;background:rgba(255,255,255,.08)" aria-hidden="true"><div style="height:100%;border-radius:6px;background:linear-gradient(90deg,#9b2fc9,#e8620a);width:'+(max&&value!==null?100*value/max:0)+'%"></div></div></div>';
+    }).join('');
+    document.getElementById('jackpot-game-rows').innerHTML=rows.map(function(g){return '<tr><th scope="row">'+esc(g.name)+'</th><td>'+g.quizzes+'</td><td>'+g.recorded+'</td><td>'+g.wins+'</td><td>'+money(g.recorded?g.total:null)+'</td><td>'+money(g.average)+'</td><td>'+money(g.winAverage)+'</td><td>'+percent(g.frequency)+'</td><td>'+money(g.recorded?g.biggest:null)+'</td></tr>';}).join('');
+  }
+  // Unknown totals and biggest prizes should not look like confirmed zeroes.
+  gameRows.forEach(function(g){if(!g.recorded){g.total=null;g.biggest=null;}});
+  document.getElementById('jackpot-metric').addEventListener('change',function(){renderGameComparison(this.value);});
+  renderGameComparison('total');
+
+  if(typeof Chart==='undefined') {
+    dash.querySelectorAll('.chart-stage').forEach(function(el){el.style.height='auto';el.innerHTML='<p class="chart-sub">Chart could not load. The complete figures are available below.</p>';});
+    dash.querySelectorAll('.chart-data').forEach(function(el){el.open=true;});
+    return;
+  }
+  Object.values(finCharts).forEach(function(c){c.destroy();});finCharts={};
+  finCharts.takings=new Chart(document.getElementById('chart-takings'),{
+    type:'bar',data:{labels:labels,datasets:[{label:'Takings',data:takingsVals,backgroundColor:takingsVals.map(function(v,i){return i===n-1?chartColors.orange:'#a865d2';}),maxBarThickness:40}]},options:options('money',false)
+  });
+  const potOptions=options('money',true,true);
+  potOptions.plugins.tooltip.callbacks.title=function(items){return items.length?projFullDates[items[0].dataIndex]:'';};
+  finCharts.pot=new Chart(document.getElementById('chart-pot'),{
+    plugins:[forecastDivider],type:'line',data:{labels:projLabels,datasets:[
+      {label:'Actual',data:giveawayVals.concat(Array(weeksProj).fill(null)),borderColor:chartColors.green,backgroundColor:'rgba(118,216,188,0.07)',fill:true,pointRadius:3},
+      {label:'Expected',data:expected,borderColor:chartColors.orange,borderDash:[7,5],pointRadius:0},
+      {label:'No wins',data:noWins,borderColor:chartColors.purple,borderDash:[2,5],borderWidth:1.5,pointRadius:0},
+      {label:'Unlucky run',data:badLuck,borderColor:'#afbdcc',borderDash:[9,4,2,4],borderWidth:1.5,pointRadius:0},
+      {label:'£150 minimum',data:projLabels.map(function(){return 150;}),borderColor:'#df8d9e',borderDash:[4,5],borderWidth:1,pointRadius:0}
+    ]},options:potOptions
+  });
+  finCharts.players=new Chart(document.getElementById('chart-players'),{
+    type:'bar',data:{labels:labels,datasets:[
+      {label:'Booked',data:bookedVals,backgroundColor:chartColors.purple,maxBarThickness:24},
+      {label:'Attended',data:actualVals,backgroundColor:chartColors.orange,maxBarThickness:24}
+    ]},options:options('players',true)
+  });
+  finCharts.rev=new Chart(document.getElementById('chart-rev'),{
+    type:'line',data:{labels:labels,datasets:[{label:'Revenue per player',data:revVals,borderColor:chartColors.purple,backgroundColor:'rgba(180,154,242,0.06)',fill:true,spanGaps:false,pointRadius:3}]},options:options('money',false)
   });
 
-  finCharts.players = new Chart(document.getElementById('chart-players'), {
-    type: 'bar',
-    data: { labels: labels, datasets: [
-      { label:'Booked', data: played.map(function(w){ return parseFloat(w['Booked Players'])||0; }), backgroundColor:'rgba(155,47,201,0.65)', borderColor:'#9b2fc9', borderWidth:1, borderRadius:4 },
-      { label:'Actual', data: played.map(function(w){ return parseFloat(w['Players'])||0; }), backgroundColor:'rgba(232,98,10,0.65)', borderColor:'#e8620a', borderWidth:1, borderRadius:4 }
-    ]},
-    options: { responsive:true, plugins:{ legend:legendCfg }, scales:axisCfg }
-  });
-
-  finCharts.rev = new Chart(document.getElementById('chart-rev'), {
-    type: 'line',
-    data: { labels: labels, datasets: [{
-      label:'\u00a3 per Player', data: played.map(function(w){
-        var p=parseFloat(w['Players'])||0; var t=parseFloat(w['Takings'])||0; return p?parseFloat((t/p).toFixed(2)):0;
-      }),
-      borderColor:'#9b2fc9', backgroundColor:'rgba(155,47,201,0.1)', tension:0.3, fill:true, pointRadius:3, pointBackgroundColor:'#9b2fc9'
-    }]},
-    options: { responsive:true, plugins:{ legend:legendCfg, tooltip:{ callbacks:{ label:function(ctx){ return fmtGBP(ctx.parsed.y); } } } }, scales:axisCfg }
-  });
 }
 
 
@@ -2295,7 +2528,7 @@ function updateWeekPreview() {
   box.style.display = 'block';
   box.innerHTML = 'Pot goes from <strong style="color:#fff;">' + fmtGBP(prevPot) + '</strong> to '
     + '<strong style="color:' + (newPot >= prevPot ? '#3ddc84' : '#ff4466') + ';">' + fmtGBP(newPot) + '</strong>'
-    + '<span style="color:rgba(255,255,255,0.28);"> &nbsp;(' + fmtGBP(prevPot) + ' + ' + fmtGBP(takings)
+    + '<span style="color:rgba(255,255,255,0.75);"> &nbsp;(' + fmtGBP(prevPot) + ' + ' + fmtGBP(takings)
     + ' + ' + fmtGBP(split) + ' &minus; ' + fmtGBP(jackpot) + ')</span>';
 }
 
@@ -2437,7 +2670,7 @@ function renderExpenseList(expenses) {
   var paid    = expenses.filter(function(e){ return e.paid === 'TRUE' || e.paid === true; });
   var pendingTotal = pending.reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
 
-  var html = '<div style="font-size:0.65rem;color:rgba(255,255,255,0.4);letter-spacing:0.1em;margin-bottom:10px;">'
+  var html = '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);letter-spacing:0.1em;margin-bottom:10px;">'
     + pending.length + ' pending &mdash; ' + fmtGBP(pendingTotal) + ' awaiting payment</div>';
 
   if (pending.length) {
@@ -2445,7 +2678,7 @@ function renderExpenseList(expenses) {
     html += pending.map(function(exp, i) { return expenseRow(exp, i, false); }).join('');
   }
   if (paid.length) {
-    html += '<div style="font-family:Bebas Neue,sans-serif;font-size:0.9rem;letter-spacing:0.1em;color:rgba(255,255,255,0.3);margin:14px 0 6px;">PAID</div>';
+    html += '<div style="font-family:Bebas Neue,sans-serif;font-size:0.9rem;letter-spacing:0.1em;color:rgba(255,255,255,0.75);margin:14px 0 6px;">PAID</div>';
     html += paid.map(function(exp, i) { return expenseRow(exp, i, true); }).join('');
   }
   el.innerHTML = html;
@@ -2457,12 +2690,12 @@ function expenseRow(exp, i, isPaid) {
     + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
       + '<div style="flex:1;min-width:0;">'
         + '<div style="font-size:0.85rem;color:#fff;font-weight:500;">' + esc(exp.title) + '</div>'
-        + '<div style="font-size:0.65rem;color:rgba(255,255,255,0.4);margin-top:2px;">' + esc(exp.name) + (date ? ' &mdash; ' + date : '') + '</div>'
-        + (exp.description ? '<div style="font-size:0.65rem;color:rgba(255,255,255,0.3);margin-top:4px;font-style:italic;">' + esc(exp.description) + '</div>' : '')
+        + '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:2px;">' + esc(exp.name) + (date ? ' &mdash; ' + date : '') + '</div>'
+        + (exp.description ? '<div style="font-size:0.8125rem;color:rgba(255,255,255,0.75);margin-top:4px;font-style:italic;">' + esc(exp.description) + '</div>' : '')
       + '</div>'
       + '<div style="text-align:right;flex-shrink:0;">'
         + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;color:' + (isPaid ? 'rgba(255,255,255,0.3)' : '#9b2fc9') + ';">' + fmtGBP(parseFloat(exp.amount)||0) + '</div>'
-        + (!isPaid ? '<button onclick="markExpensePaid(' + JSON.stringify(exp.id) + ')" style="margin-top:6px;background:rgba(61,220,132,0.15);border:1.5px solid rgba(61,220,132,0.4);border-radius:8px;color:#3ddc84;font-family:DM Mono,monospace;font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;padding:4px 10px;cursor:pointer;">Mark Paid</button>' : '<div style="font-size:0.6rem;color:rgba(61,220,132,0.5);margin-top:4px;">&#x2713; Paid</div>')
+        + (!isPaid ? '<button onclick="markExpensePaid(' + JSON.stringify(exp.id) + ')" style="margin-top:6px;background:rgba(61,220,132,0.15);border:1.5px solid rgba(61,220,132,0.4);border-radius:8px;color:#3ddc84;font-family:DM Mono,monospace;font-size:0.8125rem;letter-spacing:0.1em;text-transform:uppercase;padding:4px 10px;cursor:pointer;">Mark Paid</button>' : '<div style="font-size:0.8125rem;color:rgba(61,220,132,0.5);margin-top:4px;">&#x2713; Paid</div>')
       + '</div>'
     + '</div>'
   + '</div>';
@@ -2518,6 +2751,17 @@ async function markExpensePaid(id) {
   else attach();
 })();
 
+</script>
+<script>
+(function(){
+ function enhance(root){
+ root.querySelectorAll('.field').forEach(function(field){var label=field.querySelector('label'),input=field.querySelector('input,select,textarea');if(label&&input&&input.id)label.htmlFor=input.id;});
+ root.querySelectorAll('.status-bar').forEach(function(el){el.setAttribute('role','status');el.setAttribute('aria-live','polite');});
+ [['manage-phone','Mobile number'],['view-pw-input','Host password'],['fin-pw-input','Finance password'],['signs-generic','Extra blank signs']].forEach(function(pair){var el=document.getElementById(pair[0]);if(el)el.setAttribute('aria-label',pair[1]);});
+ }
+ enhance(document);
+ document.getElementById('cal-selected-display').setAttribute('aria-live','polite');
+})();
 </script>
 </body>
 </html>
