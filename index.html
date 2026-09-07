@@ -468,34 +468,9 @@
       <button onclick="toggleHostView()" style="background:none;border:2px solid rgba(232,98,10,0.4);border-radius:12px;color:rgba(255,255,255,0.5);font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;padding:8px 16px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='#e8620a';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(232,98,10,0.4)';this.style.color='rgba(255,255,255,0.5)'">&#x2715; Close</button>
     </div>
     <!-- Host tabs -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
       <button id="host-tab-bookings" onclick="switchHostTab('bookings')" class="tab-btn active">&#x1F4CB; Bookings</button>
       <button id="host-tab-finance"  onclick="switchHostTab('finance')"  class="tab-btn">&#x1F4B0; Finance</button>
-      <button id="host-tab-settings" onclick="switchHostTab('settings')" class="tab-btn">&#x2699; Settings</button>
-    </div>
-
-    <!-- Settings: weeks with no quiz -->
-    <div id="settings-section" style="display:none;">
-      <div class="panel">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:0.08em;color:#fff;margin-bottom:4px;">NO-QUIZ DATES</div>
-        <div style="font-size:0.65rem;color:rgba(255,255,255,0.35);margin-bottom:16px;line-height:1.6;">
-          Block a Thursday and nobody can book it &mdash; it greys out on the calendar, gets skipped by recurring bookings, and shows a &ldquo;back next week&rdquo; notice.
-        </div>
-        <div class="form-grid">
-          <div class="field">
-            <label>Date to block</label>
-            <input type="date" id="nq-date">
-          </div>
-          <div class="field">
-            <label>Reason (optional)</label>
-            <input type="text" id="nq-reason" placeholder="e.g. Christmas Eve" maxlength="60">
-          </div>
-        </div>
-        <button class="btn-primary" onclick="addNoQuizDate()">BLOCK THIS DATE</button>
-        <div class="status-bar" id="nq-status"></div>
-        <div class="divider"></div>
-        <div id="nq-list"></div>
-      </div>
     </div>
 
     <!-- Password gate -->
@@ -543,6 +518,13 @@
             <div class="stat-value orange" id="stat-players-view">&mdash;</div>
           </div>
         </div>
+
+        <!-- Is there a quiz on this week? -->
+        <div id="nq-strip" style="border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div id="nq-strip-text" style="font-size:0.72rem;letter-spacing:0.04em;"></div>
+          <button class="btn-ghost" id="nq-strip-btn" style="white-space:nowrap;"></button>
+        </div>
+        <div class="status-bar" id="nq-status" style="margin-bottom:14px;"></div>
 
         <!-- Reserved signs printing -->
         <div style="background:rgba(26,0,64,0.5);border:1px solid rgba(232,98,10,0.25);border-radius:14px;padding:14px 16px;margin-bottom:14px;">
@@ -1108,90 +1090,74 @@ function renderNoQuizBanner() {
     + back.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}) + '</div>';
 }
 
-// ── Settings: manage no-quiz dates ──
-function renderNoQuizList() {
-  const list = document.getElementById('nq-list');
-  if (!list) return;
-  const today = isoDate(new Date());
-  const upcoming = NO_QUIZ_DATES.filter(function(d){ return d >= today; }).sort();
-  const past     = NO_QUIZ_DATES.filter(function(d){ return d <  today; }).sort().reverse();
+// ── No-quiz toggle, shown on each week's detail page ──
+function renderNoQuizStrip() {
+  const strip = document.getElementById('nq-strip');
+  const text  = document.getElementById('nq-strip-text');
+  const btn   = document.getElementById('nq-strip-btn');
+  if (!strip || !currentDetailIso) return;
 
-  list.innerHTML = '';
-  if (!NO_QUIZ_DATES.length) {
-    list.innerHTML = '<div class="empty-state" style="padding:20px 0;">No dates blocked &mdash; every Thursday is bookable.</div>';
-    return;
-  }
+  const blocked = NO_QUIZ_DATES.includes(currentDetailIso);
+  const reason  = noQuizReasons[currentDetailIso] || '';
 
-  function section(title, dates, dim) {
-    if (!dates.length) return;
-    const hdr = document.createElement('div');
-    hdr.style.cssText = 'font-family:Bebas Neue,sans-serif;font-size:0.95rem;letter-spacing:0.14em;color:rgba(255,255,255,0.35);margin:10px 0 8px;';
-    hdr.textContent = title;
-    list.appendChild(hdr);
-
-    dates.forEach(function(iso) {
-      const d = new Date(iso + 'T12:00:00');
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(26,0,64,0.5);border-radius:12px;padding:12px 14px;margin-bottom:8px;' + (dim ? 'opacity:0.45;' : '');
-
-      const left = document.createElement('div');
-      left.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:0.85rem;color:#fff;">'
-        + d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}) + '</div>'
-        + (noQuizReasons[iso] ? '<div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:3px;">' + escHtml(noQuizReasons[iso]) + '</div>' : '');
-
-      const btn = document.createElement('button');
-      btn.className = 'btn-ghost';
-      btn.style.cssText = 'white-space:nowrap;border-color:rgba(255,68,102,0.35);color:#ff4466;';
-      btn.textContent = 'Unblock';
-      btn.addEventListener('click', function(){ removeNoQuizDate(iso); });
-
-      row.appendChild(left); row.appendChild(btn);
-      list.appendChild(row);
-    });
-  }
-
-  section('UPCOMING', upcoming, false);
-  section('PAST', past, true);
-}
-
-async function addNoQuizDate() {
-  const status = document.getElementById('nq-status');
-  const date   = document.getElementById('nq-date').value;
-  const reason = document.getElementById('nq-reason').value.trim();
-  if (!date) { setStatus(status,'error','Please pick a date.'); return; }
-
-  const d = new Date(date + 'T12:00:00');
-  if (d.getDay() !== 4) { setStatus(status,'error','That is not a Thursday — the quiz only runs on Thursdays.'); return; }
-  if (NO_QUIZ_DATES.includes(date)) { setStatus(status,'error','That date is already blocked.'); return; }
-
-  setStatus(status,'loading','Blocking...');
-  try {
-    const res  = await apiFetch(new URLSearchParams({ action:'addNoQuiz', password: hostPw, date: date, reason: reason }));
-    const data = await res.json();
-    if (data.error) { setStatus(status,'error', data.error === 'unauthorised' ? 'Session expired — unlock again.' : data.error); return; }
-    await loadNoQuizDates();
-    renderNoQuizList(); renderCal(); renderNoQuizBanner();
-    document.getElementById('nq-date').value = '';
-    document.getElementById('nq-reason').value = '';
-    setStatus(status,'success','✓ Date blocked. Nobody can book it now.');
-  } catch (e) {
-    setStatus(status,'error','Could not save. Please try again.');
+  if (blocked) {
+    strip.style.background  = 'rgba(255,68,102,0.1)';
+    strip.style.border      = '1.5px solid rgba(255,68,102,0.4)';
+    text.innerHTML = '<strong style="color:#ff4466;">&#x1F6AB; NO QUIZ THIS WEEK</strong>'
+      + (reason ? '<span style="color:rgba(255,255,255,0.4);"> &mdash; ' + escHtml(reason) + '</span>' : '')
+      + '<div style="font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:3px;">Nobody can book this date</div>';
+    btn.textContent = 'Put the quiz back on';
+    btn.style.cssText = 'white-space:nowrap;border-color:rgba(61,220,132,0.4);color:#3ddc84;';
+    btn.onclick = function() { setNoQuiz(false); };
+  } else {
+    strip.style.background  = 'rgba(26,0,64,0.5)';
+    strip.style.border      = '1.5px solid rgba(255,255,255,0.08)';
+    text.innerHTML = '<span style="color:rgba(255,255,255,0.55);">Quiz is on as normal this week.</span>'
+      + '<div style="font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:3px;">Cancel it and the date greys out for everyone</div>';
+    btn.textContent = '\u{1F6AB} No quiz this week';
+    btn.style.cssText = 'white-space:nowrap;border-color:rgba(255,68,102,0.35);color:#ff4466;';
+    btn.onclick = function() { setNoQuiz(true); };
   }
 }
 
-async function removeNoQuizDate(iso) {
+async function setNoQuiz(block) {
   const status = document.getElementById('nq-status');
-  setStatus(status,'loading','Unblocking...');
-  try {
-    const res  = await apiFetch(new URLSearchParams({ action:'removeNoQuiz', password: hostPw, date: iso }));
-    const data = await res.json();
-    if (data.error) { setStatus(status,'error', data.error === 'unauthorised' ? 'Session expired — unlock again.' : data.error); return; }
-    await loadNoQuizDates();
-    renderNoQuizList(); renderCal(); renderNoQuizBanner();
-    setStatus(status,'success','✓ Date unblocked — it is bookable again.');
-  } catch (e) {
-    setStatus(status,'error','Could not update. Please try again.');
+  const btn    = document.getElementById('nq-strip-btn');
+  const iso    = currentDetailIso;
+  if (!iso) return;
+
+  let reason = '';
+  if (block) {
+    // Warn before cancelling a week people have already booked
+    const booked = bookings.reduce(function(s,b){ return s+(parseInt(b.players)||0); }, 0);
+    if (bookings.length) {
+      if (!confirm('There ' + (bookings.length===1?'is':'are') + ' already ' + bookings.length + ' table'
+        + (bookings.length===1?'':'s') + ' (' + booked + ' player' + (booked===1?'':'s')
+        + ') booked for this date.\n\nTheir bookings stay in the system, so you can still contact them, but nobody new will be able to book.\n\nCancel the quiz on this date?')) return;
+    }
+    reason = (prompt('Why is there no quiz? (optional, e.g. Christmas Eve)') || '').trim();
   }
+
+  btn.disabled = true;
+  setStatus(status, 'loading', block ? 'Cancelling this week...' : 'Restoring this week...');
+  try {
+    const params = new URLSearchParams(block
+      ? { action:'addNoQuiz',    password: hostPw, date: iso, reason: reason }
+      : { action:'removeNoQuiz', password: hostPw, date: iso });
+    const res  = await apiFetch(params);
+    const data = await res.json();
+    if (data.error) {
+      setStatus(status, 'error', data.error === 'unauthorised' ? 'Session expired — unlock again.' : data.error);
+      btn.disabled = false; return;
+    }
+    await loadNoQuizDates();
+    renderNoQuizStrip(); renderCal(); renderNoQuizBanner();
+    setStatus(status, 'success', block ? '\u2713 Cancelled — this date is now blocked.' : '\u2713 Quiz is back on for this date.');
+    setTimeout(function(){ setStatus(status, '', ''); }, 3000);
+  } catch (e) {
+    setStatus(status, 'error', 'Could not update. Please try again.');
+  }
+  btn.disabled = false;
 }
 
 function calDayClick(iso) {
@@ -1575,13 +1541,27 @@ function makeDateRow(r, list) {
   row.style.cssText = 'cursor:pointer;padding:16px 20px;background:rgba(20,0,50,0.85);border:2px solid rgba(232,98,10,0.35);border-radius:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;transition:all 0.15s;';
   row.addEventListener('click', function() { loadDateDetail(iso, dateStr); });
   row.addEventListener('mouseover', function() { this.style.borderColor='#e8620a'; this.style.background='rgba(100,30,160,0.4)'; });
-  row.addEventListener('mouseout',  function() { this.style.borderColor='rgba(232,98,10,0.35)'; this.style.background='rgba(26,0,64,0.5)'; });
+  row.addEventListener('mouseout',  function() {
+    this.style.borderColor = NO_QUIZ_DATES.includes(iso) ? 'rgba(255,68,102,0.45)'
+                           : (tables ? 'rgba(232,98,10,0.35)' : 'rgba(255,255,255,0.1)');
+    this.style.background = 'rgba(26,0,64,0.5)';
+  });
+  var isBlocked = NO_QUIZ_DATES.includes(iso);
+  if (isBlocked) {
+    row.style.borderColor = 'rgba(255,68,102,0.45)';
+    row.style.opacity = '0.75';
+  } else if (!tables) {
+    row.style.borderColor = 'rgba(255,255,255,0.1)';
+    row.style.opacity = '0.6';
+  }
   row.innerHTML = '<div>'
     + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;letter-spacing:0.06em;color:#fff;text-shadow:0 0 16px rgba(232,98,10,0.4);">' + dateStr + '</div>'
-    + '<div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:2px;">' + tables + ' table' + (tables===1?'':'s') + '</div>'
+    + (isBlocked
+        ? '<div style="font-size:0.58rem;color:#ff4466;letter-spacing:0.12em;margin-top:3px;">&#x1F6AB; NO QUIZ</div>'
+        : '<div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:2px;">' + tables + ' table' + (tables===1?'':'s') + '</div>')
     + '</div>'
     + '<div style="text-align:right;flex-shrink:0;">'
-      + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.6rem;color:#e8620a;line-height:1;">' + players + '</div>'
+      + '<div style="font-family:Bebas Neue,sans-serif;font-size:1.6rem;color:' + (players ? '#e8620a' : 'rgba(255,255,255,0.25)') + ';line-height:1;">' + players + '</div>'
       + '<div style="font-size:0.55rem;color:rgba(255,255,255,0.3);letter-spacing:0.15em;">PLAYERS</div>'
     + '</div>'
     + '<div style="color:rgba(232,98,10,0.6);font-size:1.2rem;">&#x203A;</div>';
@@ -1600,14 +1580,8 @@ async function loadAllDates() {
     const thisWeek = { date: nextThurs, bookings: data.bookings || [] };
 
     list.innerHTML = '';
-    if (thisWeek.bookings.length > 0) {
-      makeDateRow(thisWeek, list);
-    } else {
-      var empty = document.createElement('div');
-      empty.className = 'empty-state';
-      empty.innerHTML = '<span class="empty-icon">&#x1F37A;</span>No bookings yet for this Thursday.';
-      list.appendChild(empty);
-    }
+    // Always show the row, even with no bookings — it's the way in to cancelling the week
+    makeDateRow(thisWeek, list);
 
     var futureBtn = document.createElement('button');
     futureBtn.className = 'btn-ghost';
@@ -1637,16 +1611,8 @@ async function loadFutureWeeks(list, btn) {
       )
     );
     if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
-    var withBookings = results.filter(r => r.bookings.length > 0);
-    if (!withBookings.length) {
-      var none = document.createElement('div');
-      none.className = 'empty-state';
-      none.style.marginTop = '10px';
-      none.innerHTML = '<span class="empty-icon">&#x1F37A;</span>No bookings for future weeks.';
-      list.appendChild(none);
-      return;
-    }
-    withBookings.forEach(function(r) { makeDateRow(r, list); });
+    // Every upcoming Thursday is listed so any of them can be opened and cancelled
+    results.forEach(function(r) { makeDateRow(r, list); });
   } catch(e) {
     if (btn) { btn.disabled=false; btn.textContent='See future weeks (retry)'; }
   }
@@ -1665,6 +1631,8 @@ async function loadDateDetail(iso, dateStr) {
   if (sp) sp.style.display = 'none';
   var st = document.getElementById('signs-toggle');
   if (st) st.textContent = 'Set up signs';
+  setStatus(document.getElementById('nq-status'), '', '');
+  renderNoQuizStrip();
   document.getElementById('bookings-list').innerHTML =
     '<div class="empty-state"><span class="spinner" style="display:block;margin:0 auto 10px;"></span>Loading…</div>';
   document.getElementById('stat-players-view').textContent = '—';
@@ -1849,16 +1817,9 @@ let financePw = '';
 function switchHostTab(tab) {
   document.getElementById('host-tab-bookings').classList.toggle('active', tab === 'bookings');
   document.getElementById('host-tab-finance').classList.toggle('active', tab === 'finance');
-  document.getElementById('host-tab-settings').classList.toggle('active', tab === 'settings');
-
-  // Settings shares the host password gate with the bookings tab
-  const needsGate = (tab === 'bookings' || tab === 'settings') && !viewUnlocked;
-  document.getElementById('view-gate').style.display        = needsGate ? 'block' : 'none';
-  document.getElementById('view-content').style.display     = (tab === 'bookings' && viewUnlocked) ? 'block' : 'none';
-  document.getElementById('settings-section').style.display = (tab === 'settings' && viewUnlocked) ? 'block' : 'none';
-  document.getElementById('finance-section').style.display  = tab === 'finance' ? 'block' : 'none';
-
-  if (tab === 'settings' && viewUnlocked) renderNoQuizList();
+  document.getElementById('view-gate').style.display       = (tab === 'bookings' && !viewUnlocked) ? 'block' : 'none';
+  document.getElementById('view-content').style.display    = (tab === 'bookings' && viewUnlocked)  ? 'block' : 'none';
+  document.getElementById('finance-section').style.display = tab === 'finance' ? 'block' : 'none';
 }
 
 // ── Finance password ──
