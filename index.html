@@ -733,6 +733,9 @@ th { color:#ded7e7; }
           </div>
         </div>
 
+        <!-- Gnome prize -->
+        <div id="gnome-panel" style="margin-bottom:18px;"></div>
+
         <div id="finance-dashboard"></div>
       </div>
 
@@ -926,6 +929,21 @@ async function apiFetch(qs) {
 
       case 'removeNoQuiz':
         await rpc('qz_remove_no_quiz', { p_password: p.get('password'), p_date: p.get('date') });
+        return wrap({ success: true });
+
+      case 'getGnome': {
+        const rows = await rpc('qz_get_gnome', {});
+        const g = (rows && rows.length) ? rows[0] : (rows || null);
+        return wrap({ gnome: g });
+      }
+
+      case 'setGnome':
+        await rpc('qz_set_gnome', {
+          p_password: p.get('password'),
+          p_start_date: p.get('start_date'),
+          p_start_amount: parseFloat(p.get('start_amount')),
+          p_increment: parseFloat(p.get('increment'))
+        });
         return wrap({ success: true });
 
       case 'markExpensePaid':
@@ -2041,14 +2059,18 @@ async function loadFinance() {
   finCharts = {};
   try {
     const nextThurs = nextThursday();
-    const [finRes, expRes, bkRes] = await Promise.all([
+    const [finRes, expRes, bkRes, gnRes] = await Promise.all([
       apiFetch(new URLSearchParams({ action: 'getFinance',  password: financePw })),
       apiFetch(new URLSearchParams({ action: 'getExpenses', password: financePw })),
-      apiFetch(new URLSearchParams({ action: 'get',         date: isoDate(nextThurs) }))
+      apiFetch(new URLSearchParams({ action: 'get',         date: isoDate(nextThurs) })),
+      apiFetch('action=getGnome')
     ]);
     const finData = await finRes.json();
     const expData = await expRes.json();
     const bkData  = await bkRes.json();
+    const gnData  = await gnRes.json();
+    gnomeData = gnData.gnome || null;
+    renderGnome();
     if (finData.error) { dash.innerHTML = '<div class="empty-state" style="color:#ff4466;">Could not load finance data.</div>'; return; }
     financeData = finData.weeks;
     const expenses = expData.expenses || [];
@@ -2469,6 +2491,139 @@ function renderFinanceDashboard(weeks, paidExpenses, pendingExpenses, upcomingBo
 
 
 // ── Expenses ──
+
+// ── Gnome prize ────────────────────────────────────────────────────
+// Value rises by a fixed amount each week the quiz actually runs.
+// Cancelled weeks don't count, so a blocked Thursday holds the value.
+let gnomeData = null;
+
+// Every Thursday from start to target — cancelled weeks still add on
+function quizWeeksBetween(startIso, endIso) {
+  if (!startIso || !endIso || endIso < startIso) return 0;
+  let count = 0;
+  let d = new Date(startIso + 'T12:00:00');
+  const end = new Date(endIso + 'T12:00:00');
+  while (d <= end) {
+    count++;
+    d.setDate(d.getDate() + 7);
+  }
+  return count;
+}
+
+function gnomeValueOn(iso) {
+  if (!gnomeData) return null;
+  const weeks = quizWeeksBetween(gnomeData.start_date, iso);
+  if (weeks === 0) return null;   // prize hadn't started yet
+  return parseFloat(gnomeData.start_amount) + parseFloat(gnomeData.increment) * (weeks - 1);
+}
+
+function renderGnome() {
+  const panel = document.getElementById('gnome-panel');
+  if (!panel) return;
+
+  if (!gnomeData) {
+    panel.innerHTML = '<div class="panel" style="text-align:center;padding:18px;">'
+      + '<div style="font-size:0.7rem;color:rgba(255,255,255,0.4);">Gnome prize not set up yet.</div></div>';
+    return;
+  }
+
+  const thisIso = isoDate(nextThursday());
+  const value   = gnomeValueOn(thisIso);
+
+  const nx = new Date(thisIso + 'T12:00:00');
+  nx.setDate(nx.getDate() + 7);
+  const nextValue = gnomeValueOn(isoDate(nx));
+
+  const weeksRunning = quizWeeksBetween(gnomeData.start_date, thisIso);
+  const startPretty  = new Date(gnomeData.start_date + 'T12:00:00')
+                        .toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+
+  panel.innerHTML =
+    '<div class="panel" style="border-color:rgba(61,220,132,0.45);">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px;">'
+      + '<div>'
+        + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.5rem;letter-spacing:0.08em;color:#fff;">&#x1F9D9; THE GNOME</div>'
+        + '<div style="font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:2px;">Rolling since ' + startPretty + '</div>'
+      + '</div>'
+      + '<button class="btn-ghost" id="gnome-won-btn" style="white-space:nowrap;border-color:rgba(255,68,102,0.4);color:#ff4466;">&#x1F3C6; Someone won it</button>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">'
+      + '<div style="background:rgba(61,220,132,0.12);border-radius:12px;padding:14px;text-align:center;">'
+        + '<div class="fin-card-label" style="margin-bottom:4px;">This Week</div>'
+        + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:2.2rem;color:#3ddc84;line-height:1;">' + (value === null ? '&mdash;' : fmtGBP(value)) + '</div>'
+      + '</div>'
+      + '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px;text-align:center;">'
+        + '<div class="fin-card-label" style="margin-bottom:4px;">If Not Won</div>'
+        + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:2.2rem;color:rgba(255,255,255,0.6);line-height:1;">' + (nextValue === null ? '&mdash;' : fmtGBP(nextValue)) + '</div>'
+      + '</div>'
+      + '<div style="background:rgba(26,0,64,0.5);border-radius:12px;padding:14px;text-align:center;">'
+        + '<div class="fin-card-label" style="margin-bottom:4px;">Weeks Rolled</div>'
+        + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:2.2rem;color:rgba(255,255,255,0.6);line-height:1;">' + weeksRunning + '</div>'
+      + '</div>'
+    + '</div>'
+    + '<div style="font-size:0.55rem;color:rgba(255,255,255,0.22);letter-spacing:0.06em;margin-top:10px;text-align:center;">'
+      + 'Goes up ' + fmtGBP(parseFloat(gnomeData.increment)) + ' every week, including cancelled ones. '
+      + '<a href="#" id="gnome-fix" style="color:rgba(255,255,255,0.4);">Correct the amount</a>'
+    + '</div>'
+    + '<div class="status-bar" id="gnome-status" style="margin-top:10px;"></div>'
+    + '</div>';
+
+  document.getElementById('gnome-won-btn').addEventListener('click', gnomeWon);
+  document.getElementById('gnome-fix').addEventListener('click', function(e){ e.preventDefault(); gnomeCorrect(); });
+}
+
+async function saveGnome(startIso, amount, increment, msg) {
+  const status = document.getElementById('gnome-status');
+  setStatus(status, 'loading', 'Saving...');
+  try {
+    const res = await apiFetch(new URLSearchParams({
+      action:'setGnome', password: hostPw,
+      start_date: startIso, start_amount: String(amount), increment: String(increment)
+    }));
+    const data = await res.json();
+    if (data.error) {
+      setStatus(status, 'error', data.error === 'unauthorised' ? 'Unlock the host view first (the cog, then Bookings).' : data.error);
+      return false;
+    }
+    gnomeData = { start_date: startIso, start_amount: amount, increment: increment };
+    renderGnome();
+    const s2 = document.getElementById('gnome-status');
+    setStatus(s2, 'success', msg);
+    setTimeout(function(){ const s3 = document.getElementById('gnome-status'); if (s3) setStatus(s3,'',''); }, 3000);
+    return true;
+  } catch (e) {
+    setStatus(status, 'error', 'Could not save. Please try again.');
+    return false;
+  }
+}
+
+// Won this week: it restarts at the base amount on the next quiz night
+async function gnomeWon() {
+  const thisIso = isoDate(nextThursday());
+  const value   = gnomeValueOn(thisIso);
+  if (!confirm('Someone won the gnome' + (value !== null ? ' at ' + fmtGBP(value) : '') + '?\n\n'
+    + 'It resets to ' + fmtGBP(parseFloat(gnomeData.increment)) + ' for the next quiz night and starts building again.')) return;
+
+  const nx = new Date(thisIso + 'T12:00:00');
+  nx.setDate(nx.getDate() + 7);
+
+  await saveGnome(isoDate(nx), parseFloat(gnomeData.increment), parseFloat(gnomeData.increment),
+                  '\u2713 Reset — back to ' + fmtGBP(parseFloat(gnomeData.increment)) + ' next week.');
+}
+
+// Manual override if the running total ever drifts from reality
+async function gnomeCorrect() {
+  const thisIso = isoDate(nextThursday());
+  const current = gnomeValueOn(thisIso);
+  const entered = prompt('What is the gnome actually worth this week? (£)', current === null ? '' : String(current));
+  if (entered === null) return;
+  const val = parseFloat(String(entered).replace(/[^0-9.]/g, ''));
+  if (isNaN(val) || val < 0) { alert('Please enter a number.'); return; }
+
+  // Anchor the start at this week's value so everything after recalculates
+  await saveGnome(thisIso, val, parseFloat(gnomeData.increment), '\u2713 Set to ' + fmtGBP(val) + ' for this week.');
+}
+
 // ── Log a week's results ──
 function lastThursday() {
   var d = new Date();
