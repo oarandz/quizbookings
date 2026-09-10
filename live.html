@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a0040">
+<title>The Woodsman's Quiz &mdash; Live</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap');
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  html, body { min-height:100%; }
+  body {
+    background:#1a0040 radial-gradient(120% 90% at 50% 0%, #2a1440 0%, #1a0a30 50%, #0a0416 100%) fixed;
+    color:#fff; font-family:'DM Mono', monospace; font-size:16px; line-height:1.5;
+    padding:max(14px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  }
+  .wrap { max-width:640px; margin:0 auto; }
+  .head { text-align:center; margin-bottom:14px; }
+  .brand { font-family:'Bebas Neue', sans-serif; font-size:1.6rem; letter-spacing:0.18em; color:#fff; line-height:1; }
+  .brand span { color:#e8620a; }
+  .conn { display:inline-flex; align-items:center; gap:6px; margin-top:6px; font-size:0.62rem; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.45); }
+  .dot { width:8px; height:8px; border-radius:50%; background:#ff4466; box-shadow:0 0 8px #ff4466; }
+  .dot.on { background:#3ddc84; box-shadow:0 0 8px #3ddc84; }
+  .panel {
+    background:rgba(100,30,160,0.22); border:1.5px solid rgba(232,98,10,0.5); border-radius:16px;
+    padding:14px 16px; margin-bottom:12px; backdrop-filter:blur(6px);
+  }
+  .round-kicker { font-size:0.62rem; letter-spacing:0.28em; text-transform:uppercase; color:#e8620a; margin-bottom:4px; }
+  .round-title { font-family:'Bebas Neue', sans-serif; font-size:clamp(28px,8vw,44px); line-height:1; letter-spacing:0.04em; text-shadow:0 0 24px rgba(232,98,10,0.45); }
+  .round-rules { font-size:0.78rem; color:#ded0ee; margin-top:8px; line-height:1.5; }
+  .q { display:flex; gap:10px; align-items:flex-start; background:rgba(100,30,160,0.35); border:1.5px solid rgba(232,98,10,0.55); border-radius:14px; padding:10px 12px; margin-bottom:10px; animation:pop 0.35s ease both; }
+  .badge { flex-shrink:0; min-width:44px; text-align:center; font-family:'Bebas Neue', sans-serif; font-size:1.35rem; line-height:1; padding:8px 8px; border-radius:9px; background:linear-gradient(135deg,#e8620a,#9b2fc9); border:1.5px solid rgba(232,98,10,0.6); }
+  .qtext { font-size:0.95rem; line-height:1.4; flex:1; }
+  .opts { margin-top:6px; display:flex; flex-direction:column; gap:4px; }
+  .opts div { font-size:0.85rem; color:#ffd7b8; background:rgba(0,0,0,0.25); border-radius:8px; padding:5px 9px; }
+  .ans { margin-top:8px; background:rgba(30,10,5,0.92); border:2px solid #f5c828; border-radius:10px; padding:8px 10px; font-family:'Bebas Neue', sans-serif; font-size:1.3rem; letter-spacing:0.04em; color:#ffe88a; line-height:1.1; }
+  .big { text-align:center; padding:40px 16px; }
+  .big .t { font-family:'Bebas Neue', sans-serif; font-size:clamp(34px,10vw,64px); line-height:1; letter-spacing:0.06em; text-shadow:0 0 30px rgba(232,98,10,0.5); }
+  .big .s { font-family:'Instrument Serif', serif; font-style:italic; font-size:1.15rem; color:#ded0ee; margin-top:10px; }
+  .note { font-family:'Instrument Serif', serif; font-style:italic; font-size:1.1rem; color:#ded0ee; text-align:center; padding:14px 8px; }
+  .score { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; background:rgba(100,30,160,0.3); border:1.5px solid rgba(232,98,10,0.4); margin-bottom:6px; }
+  .score .rank { font-family:'Bebas Neue', sans-serif; font-size:1.2rem; width:2ch; text-align:right; color:#ffad65; }
+  .score .team { flex:1; font-family:'Bebas Neue', sans-serif; font-size:1.25rem; letter-spacing:0.04em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .score .pts { font-family:'Bebas Neue', sans-serif; font-size:1.25rem; color:#f5c828; }
+  .score.first { border-color:#f5c828; box-shadow:0 0 18px rgba(245,200,40,0.35); }
+  .prizes { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .prize { border-radius:9px; padding:10px 6px; text-align:center; font-family:'Bebas Neue', sans-serif; font-size:0.95rem; letter-spacing:0.04em; line-height:1.1; min-height:56px; display:flex; align-items:center; justify-content:center; }
+  .prize.red    { background:rgba(160,40,10,0.45); border:1.5px solid #e8620a; }
+  .prize.blue   { background:rgba(30,60,180,0.4); border:1.5px solid #4488ff; }
+  .prize.yellow { background:rgba(140,100,0,0.45); border:1.5px solid #f5c828; }
+  .prize.won { opacity:0.28; text-decoration:line-through; }
+  .list { columns:2; column-gap:14px; font-size:0.72rem; color:#ffd7b8; }
+  .list div { padding:2px 0; break-inside:avoid; border-bottom:1px dotted rgba(255,255,255,0.12); }
+  .foot { text-align:center; font-size:0.6rem; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.3); margin-top:18px; }
+  @keyframes pop { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @keyframes pulse { 0%,100% { opacity:0.55; } 50% { opacity:1; } }
+  .waiting { animation:pulse 2.4s ease-in-out infinite; }
+  .cd { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:18px auto 0; max-width:360px; }
+  .cd .cell { background:rgba(0,0,0,0.28); border:1.5px solid rgba(232,98,10,0.55); border-radius:14px; padding:12px 6px 9px; }
+  .cd .n { font-family:'Bebas Neue', sans-serif; font-size:clamp(40px,13vw,68px); line-height:1; color:#ffe88a; text-shadow:0 0 22px rgba(245,200,40,0.4); font-variant-numeric:tabular-nums; }
+  .cd .l { font-size:0.6rem; letter-spacing:0.24em; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-top:4px; }
+  .when { margin-top:16px; font-family:'Bebas Neue', sans-serif; font-size:clamp(20px,6vw,30px); letter-spacing:0.08em; color:#ffad65; line-height:1.1; }
+  .cancel { margin:0 auto 12px; display:inline-block; background:rgba(255,68,102,0.16); border:1.5px solid rgba(255,68,102,0.7); border-radius:999px; padding:6px 14px; font-size:0.66rem; letter-spacing:0.22em; text-transform:uppercase; color:#ffb3c0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="brand">THE WOODSMAN'S QUIZ <span>&middot; LIVE</span></div>
+    <div class="conn"><span class="dot" id="dot"></span><span id="conn-text">connecting</span></div>
+  </div>
+  <div id="content">
+    <div class="panel big waiting"><div class="t">CONNECTING…</div></div>
+  </div>
+  <div class="foot">Keep this page open &mdash; it updates by itself</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://zjdxgcmeraiodigwdxpy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_bGAlVUYeS9u1Pv8kmTGdrw_wSXBpUJA';
+const ROW_ID = 'main';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+let lastKey = '';
+
+function setConn(ok, text) {
+  document.getElementById('dot').className = 'dot' + (ok ? ' on' : '');
+  document.getElementById('conn-text').textContent = text;
+}
+
+function roundHeader(r) {
+  if (!r) return '';
+  return `<div class="panel">
+    <div class="round-kicker">Round ${esc(r.num)}</div>
+    <div class="round-title">${esc(r.name)}</div>
+    ${r.rules ? `<div class="round-rules">${esc(r.rules)}</div>` : ''}
+  </div>`;
+}
+function bigCard(title, sub, waiting) {
+  return `<div class="panel big${waiting ? ' waiting' : ''}"><div class="t">${title}</div>${sub ? `<div class="s">${sub}</div>` : ''}</div>`;
+}
+function itemCard(it, withAnswer) {
+  return `<div class="q">
+    <div class="badge">${esc(it.label)}</div>
+    <div style="flex:1;min-width:0;">
+      ${it.text ? `<div class="qtext">${esc(it.text)}</div>` : ''}
+      ${it.options && it.options.length ? `<div class="opts">${it.options.map(o => `<div>${esc(o)}</div>`).join('')}</div>` : ''}
+      ${withAnswer && it.answer !== undefined ? `<div class="ans">${esc(it.answer)}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+// ── Next-quiz countdown (shown while the host hasn't gone live) ──
+const QUIZ_DAY = 4;                 // Thursday
+const QUIZ_HOUR = 19, QUIZ_MIN = 30; // 7:30pm
+let NO_QUIZ_DATES = [];             // ISO dates (yyyy-mm-dd) with no quiz, from Supabase
+let noQuizReasons = {};
+let currentPhase = 'idle';
+
+const isoDate = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+const quizStart = d => { const t = new Date(d); t.setHours(QUIZ_HOUR, QUIZ_MIN, 0, 0); return t; };
+const fmtDate = d => d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+
+async function loadNoQuizDates() {
+  try {
+    const { data, error } = await sb.rpc('qz_no_quiz_dates');
+    if (error) throw error;
+    NO_QUIZ_DATES = (data || []).map(r => String(r.date).substring(0,10));
+    noQuizReasons = {};
+    (data || []).forEach(r => { noQuizReasons[String(r.date).substring(0,10)] = r.reason || ''; });
+  } catch (e) { /* keep whatever we had */ }
+  if (currentPhase === 'idle') { lastKey = ''; render({ phase: 'idle' }); }
+}
+
+// The next Thursday on the calendar. Thursday counts as "today" until the quiz night is over (midnight).
+function rawNextThursday() {
+  const now = new Date();
+  const d = new Date(now); d.setHours(0,0,0,0);
+  // Thursday counts as "today" until 10:30pm; after that we're counting down to next week
+  if (now.getDay() === QUIZ_DAY && (now.getHours() < 22 || (now.getHours() === 22 && now.getMinutes() < 30))) return d;
+  d.setDate(d.getDate() + ((QUIZ_DAY - now.getDay() + 7) % 7 || 7));
+  return d;
+}
+
+// { target: Date (7:30pm on the next quiz that IS happening), cancelled: [ISO dates skipped] }
+function nextQuiz() {
+  let d = rawNextThursday();
+  const cancelled = [];
+  for (let i = 0; i < 60 && NO_QUIZ_DATES.includes(isoDate(d)); i++) {
+    cancelled.push(isoDate(d));
+    d = new Date(d); d.setDate(d.getDate() + 7);
+  }
+  return { target: quizStart(d), cancelled };
+}
+
+function countdownHTML() {
+  const { target, cancelled } = nextQuiz();
+  const now = new Date();
+  const diff = target - now;
+  let head = '';
+  if (cancelled.length) {
+    const first = cancelled[0];
+    const firstD = new Date(first + 'T12:00:00');
+    const soon = (firstD - now) < 7 * 86400000;
+    const reason = noQuizReasons[first];
+    head = `<div class="cancel">${cancelled.length > 1 ? 'No quiz for the next ' + cancelled.length + ' Thursdays' : 'No quiz ' + (soon ? 'this' : 'next') + ' Thursday'}</div>`
+         + (reason ? `<div class="s" style="margin:-4px 0 14px">${esc(reason)}</div>` : '');
+  }
+  if (diff <= 0) {
+    // Quiz night, after 7:30pm, host not live yet
+    return `<div class="panel big waiting">${head}<div class="t">QUIZ NIGHT!</div>
+      <div class="s">Starting any moment &mdash; this page will follow along once we&rsquo;re live</div></div>`;
+  }
+  const mins = Math.floor(diff / 60000);
+  const days = Math.floor(mins / 1440), hours = Math.floor((mins % 1440) / 60), m = mins % 60;
+  return `<div class="panel big">${head}<div class="t">NEXT QUIZ IN</div>
+    <div class="cd" id="cd">
+      <div class="cell"><div class="n" id="cd-d">${days}</div><div class="l">day${days === 1 ? '' : 's'}</div></div>
+      <div class="cell"><div class="n" id="cd-h">${hours}</div><div class="l">hour${hours === 1 ? '' : 's'}</div></div>
+      <div class="cell"><div class="n" id="cd-m">${m}</div><div class="l">min${m === 1 ? '' : 's'}</div></div>
+    </div>
+    <div class="when">${fmtDate(target)} &middot; 7:30pm</div>
+    <div class="s">This page will follow the quiz as it happens</div></div>`;
+}
+
+// Re-render the countdown every 20s while idle (only touches the DOM when the numbers change)
+setInterval(() => {
+  if (currentPhase !== 'idle') return;
+  lastKey = '';
+  render({ phase: 'idle' });
+}, 20000);
+
+function render(row) {
+  const phase = row?.phase || 'idle';
+  const p = row?.payload || {};
+  currentPhase = phase;
+  const key = JSON.stringify([phase, p, phase === 'idle' ? countdownHTML() : null]);
+  if (key === lastKey) return;
+  lastKey = key;
+  let html = '';
+  switch (phase) {
+    case 'round':
+      html = roundHeader(p.round) + bigCard('GET READY', 'Questions on their way…', true);
+      break;
+    case 'questions':
+      html = roundHeader(p.round);
+      if (p.note) html += `<div class="note">${esc(p.note)}</div>`;
+      if (p.items && p.items.length) html += p.items.map(it => itemCard(it, false)).join('');
+      else if (!p.note) html += `<div class="note">Waiting for the first question…</div>`;
+      break;
+    case 'answers':
+      html = roundHeader(p.round ? { ...p.round, name: p.round.name + ' — answers' } : null);
+      if (p.note) html += `<div class="note">${esc(p.note)}</div>`;
+      if (p.list) html += `<div class="panel"><div class="list">${p.list.map(a => `<div>${esc(a)}</div>`).join('')}</div></div>`;
+      if (p.items && p.items.length) html += p.items.map(it => itemCard(it, true)).join('');
+      else if (!p.note && !p.list) html += `<div class="note">Answers coming up…</div>`;
+      break;
+    case 'break':
+      html = bigCard('BACK SOON', 'Grab a drink &mdash; the quiz continues shortly', true);
+      break;
+    case 'monm-intro':
+      html = bigCard('MEAL OR NO MEAL', 'Eyes on the big screen…', true);
+      break;
+    case 'monm':
+      html = `<div class="panel"><div class="round-kicker">Meal or No Meal</div><div class="round-title">PRIZE BOARD</div></div>
+        <div class="prizes">${(p.prizes || []).map(pr => `<div class="prize ${(pr.colour || 'red').toLowerCase()}${pr.won ? ' won' : ''}">${esc(pr.name)}</div>`).join('')}</div>`;
+      break;
+    case 'scores':
+      html = `<div class="panel"><div class="round-kicker">Final</div><div class="round-title">SCOREBOARD</div></div>`
+        + (p.rows && p.rows.length
+            ? p.rows.map(r => `<div class="score${r.rank === '1' ? ' first' : ''}"><span class="rank">${esc(r.rank)}</span><span class="team">${esc(r.team)}</span><span class="pts">${esc(r.score)}</span></div>`).join('')
+            : `<div class="note">Scores being revealed on the big screen…</div>`);
+      break;
+    case 'jackpot':
+      html = bigCard('JACKPOT GAME', p.game ? esc(p.game) + ' &mdash; watch the big screen!' : 'Watch the big screen!', false);
+      break;
+    case 'jackpot-win':
+      html = bigCard('£150 WON!', 'Jackpot!', false);
+      break;
+    case 'ended':
+      html = bigCard('THANKS FOR PLAYING', 'See you next week', false);
+      break;
+    default:
+      html = countdownHTML();
+  }
+  document.getElementById('content').innerHTML = html;
+}
+
+async function fetchState() {
+  const { data, error } = await sb.from('live_state').select('phase,payload,updated_at').eq('id', ROW_ID).maybeSingle();
+  if (error) { setConn(false, 'reconnecting'); return; }
+  setConn(true, 'live');
+  if (data) render(data);
+}
+
+fetchState();
+loadNoQuizDates();
+setInterval(loadNoQuizDates, 10 * 60000);   // pick up newly-cancelled weeks
+sb.channel('live_state_watch')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'live_state', filter: 'id=eq.' + ROW_ID }, payload => {
+    if (payload.new) { setConn(true, 'live'); render(payload.new); }
+  })
+  .subscribe(status => { if (status === 'SUBSCRIBED') setConn(true, 'live'); else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setConn(false, 'reconnecting'); });
+setInterval(fetchState, 20000);                       // belt-and-braces if realtime drops
+document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchState(); });
+</script>
+</body>
+</html>
