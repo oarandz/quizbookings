@@ -55,6 +55,17 @@
   @keyframes pop { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
   @keyframes pulse { 0%,100% { opacity:0.55; } 50% { opacity:1; } }
   .waiting { animation:pulse 2.4s ease-in-out infinite; }
+  .testbar { text-align:center; margin-bottom:12px; }
+  .testbar span { display:inline-block; background:rgba(255,200,40,0.14); border:1.5px solid rgba(245,200,40,0.7); border-radius:999px; padding:5px 14px; font-size:0.62rem; letter-spacing:0.24em; text-transform:uppercase; color:#ffe88a; }
+  .cog { display:block; margin:26px auto 0; width:34px; height:34px; border:none; background:none; color:rgba(255,255,255,0.16); font-size:20px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .cog:active { color:rgba(255,255,255,0.5); }
+  .host { display:none; margin-top:10px; background:rgba(0,0,0,0.3); border:1.5px solid rgba(255,255,255,0.14); border-radius:14px; padding:14px; }
+  .host.open { display:block; }
+  .host h3 { font-family:'Bebas Neue', sans-serif; font-size:1.1rem; letter-spacing:0.12em; color:#ffad65; margin-bottom:8px; }
+  .host input { width:100%; margin-bottom:8px; background:rgba(0,0,0,0.4); border:1.5px solid rgba(255,255,255,0.18); border-radius:10px; color:#fff; font-family:'DM Mono', monospace; font-size:16px; padding:10px 12px; }
+  .host button { width:100%; background:linear-gradient(135deg,#e8620a,#9b2fc9); border:none; border-radius:10px; color:#fff; font-family:'Bebas Neue', sans-serif; font-size:1.15rem; letter-spacing:0.1em; padding:11px; cursor:pointer; }
+  .host button.ghost { background:none; border:1.5px solid rgba(255,255,255,0.25); margin-top:6px; }
+  .host .msg { font-size:0.72rem; color:#ded0ee; margin-top:8px; min-height:1em; }
   .cd { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:18px auto 0; max-width:360px; }
   .cd .cell { background:rgba(0,0,0,0.28); border:1.5px solid rgba(232,98,10,0.55); border-radius:14px; padding:12px 6px 9px; }
   .cd .n { font-family:'Bebas Neue', sans-serif; font-size:clamp(40px,13vw,68px); line-height:1; color:#ffe88a; text-shadow:0 0 22px rgba(245,200,40,0.4); font-variant-numeric:tabular-nums; }
@@ -73,6 +84,20 @@
     <div class="panel big waiting"><div class="t">CONNECTING…</div></div>
   </div>
   <div class="foot">Keep this page open &mdash; it updates by itself</div>
+  <button class="cog" id="cog" aria-label="Host settings" title="Host settings">&#9881;</button>
+  <div class="host" id="host">
+    <h3 id="host-title">HOST SIGN IN</h3>
+    <div id="host-form">
+      <input id="host-email" type="email" placeholder="host email" autocomplete="username">
+      <input id="host-pw" type="password" placeholder="password" autocomplete="current-password">
+      <button id="host-signin">SIGN IN</button>
+    </div>
+    <div id="host-signed" style="display:none">
+      <div class="msg" id="host-who"></div>
+      <button class="ghost" id="host-signout">SIGN OUT</button>
+    </div>
+    <div class="msg" id="host-msg"></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -81,9 +106,23 @@ const SUPABASE_URL = 'https://zjdxgcmeraiodigwdxpy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_bGAlVUYeS9u1Pv8kmTGdrw_wSXBpUJA';
 const ROW_ID = 'main';
 
+const TEST_ROW_ID = 'test';   // only readable when signed in as the host
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 let lastKey = '';
+let rows = { main: null, test: null };   // latest copy of each row
+let hostUser = null;                      // signed-in host (Supabase user) or null
+let showingTest = false;
+
+// Everyone sees the LIVE row. A signed-in host also sees the TEST row while LIVE is idle.
+function pickRow() {
+  const main = rows.main, test = rows.test;
+  if (main && main.phase && main.phase !== 'idle') { showingTest = false; return main; }
+  if (hostUser && test && test.phase && test.phase !== 'idle') { showingTest = true; return test; }
+  showingTest = false;
+  return main || { phase: 'idle', payload: {} };
+}
+function renderCurrent() { render(pickRow()); }
 
 function setConn(ok, text) {
   document.getElementById('dot').className = 'dot' + (ok ? ' on' : '');
@@ -131,7 +170,7 @@ async function loadNoQuizDates() {
     noQuizReasons = {};
     (data || []).forEach(r => { noQuizReasons[String(r.date).substring(0,10)] = r.reason || ''; });
   } catch (e) { /* keep whatever we had */ }
-  if (currentPhase === 'idle') { lastKey = ''; render({ phase: 'idle' }); }
+  if (currentPhase === 'idle') { lastKey = ''; renderCurrent(); }
 }
 
 // The next Thursday on the calendar. Thursday counts as "today" until the quiz night is over (midnight).
@@ -189,14 +228,14 @@ function countdownHTML() {
 setInterval(() => {
   if (currentPhase !== 'idle') return;
   lastKey = '';
-  render({ phase: 'idle' });
+  renderCurrent();
 }, 20000);
 
 function render(row) {
   const phase = row?.phase || 'idle';
   const p = row?.payload || {};
   currentPhase = phase;
-  const key = JSON.stringify([phase, p, phase === 'idle' ? countdownHTML() : null]);
+  const key = JSON.stringify([phase, p, showingTest, phase === 'idle' ? countdownHTML() : null]);
   if (key === lastKey) return;
   lastKey = key;
   let html = '';
@@ -245,24 +284,67 @@ function render(row) {
     default:
       html = countdownHTML();
   }
-  document.getElementById('content').innerHTML = html;
+  const badge = showingTest && phase !== 'idle' ? '<div class="testbar"><span>Test mode &middot; host view</span></div>' : '';
+  document.getElementById('content').innerHTML = badge + html;
 }
 
 async function fetchState() {
-  const { data, error } = await sb.from('live_state').select('phase,payload,updated_at').eq('id', ROW_ID).maybeSingle();
+  const { data, error } = await sb.from('live_state').select('id,phase,payload,updated_at').in('id', [ROW_ID, TEST_ROW_ID]);
   if (error) { setConn(false, 'reconnecting'); return; }
   setConn(true, 'live');
-  if (data) render(data);
+  rows.main = null; rows.test = null;
+  (data || []).forEach(r => { if (r.id === ROW_ID) rows.main = r; else if (r.id === TEST_ROW_ID) rows.test = r; });
+  renderCurrent();
 }
+
+let chan = null;
+function subscribe() {
+  if (chan) { try { sb.removeChannel(chan); } catch(e) {} }
+  chan = sb.channel('live_state_watch_' + Date.now())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'live_state' }, payload => {
+      const r = payload.new; if (!r) return;
+      setConn(true, 'live');
+      if (r.id === ROW_ID) rows.main = r;
+      else if (r.id === TEST_ROW_ID) { if (hostUser) rows.test = r; else return; }
+      else return;
+      renderCurrent();
+    })
+    .subscribe(status => { if (status === 'SUBSCRIBED') setConn(true, 'live'); else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setConn(false, 'reconnecting'); });
+}
+
+// ── Hidden host sign-in (cog at the bottom) ──
+const $ = id => document.getElementById(id);
+function hostUI() {
+  const on = !!hostUser;
+  $('host-form').style.display = on ? 'none' : '';
+  $('host-signed').style.display = on ? '' : 'none';
+  $('host-title').textContent = on ? 'HOST MODE' : 'HOST SIGN IN';
+  $('host-who').textContent = on ? 'Signed in as ' + (hostUser.email || 'host') + ' — this phone shows TEST runs too' : '';
+  $('cog').style.color = on ? 'rgba(255,173,101,0.55)' : '';
+}
+$('cog').addEventListener('click', () => { $('host').classList.toggle('open'); if ($('host').classList.contains('open')) $('host').scrollIntoView({ behavior:'smooth', block:'end' }); });
+$('host-signin').addEventListener('click', async () => {
+  const email = $('host-email').value.trim(), password = $('host-pw').value;
+  if (!email || !password) { $('host-msg').textContent = 'Enter the host email and password'; return; }
+  $('host-msg').textContent = 'Signing in…';
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  $('host-msg').textContent = error ? 'Sign-in failed: ' + error.message : '';
+  if (!error) $('host-pw').value = '';
+});
+$('host-pw').addEventListener('keydown', e => { if (e.key === 'Enter') $('host-signin').click(); });
+$('host-signout').addEventListener('click', async () => { await sb.auth.signOut(); $('host-msg').textContent = ''; });
+sb.auth.onAuthStateChange((_evt, session) => {
+  const was = !!hostUser;
+  hostUser = session?.user || null;
+  if (!hostUser) rows.test = null;
+  hostUI();
+  if (was !== !!hostUser) { subscribe(); fetchState(); }   // re-subscribe with the new token so RLS lets the test row through
+});
 
 fetchState();
 loadNoQuizDates();
 setInterval(loadNoQuizDates, 10 * 60000);   // pick up newly-cancelled weeks
-sb.channel('live_state_watch')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'live_state', filter: 'id=eq.' + ROW_ID }, payload => {
-    if (payload.new) { setConn(true, 'live'); render(payload.new); }
-  })
-  .subscribe(status => { if (status === 'SUBSCRIBED') setConn(true, 'live'); else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setConn(false, 'reconnecting'); });
+subscribe();
 setInterval(fetchState, 20000);                       // belt-and-braces if realtime drops
 document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchState(); });
 </script>
