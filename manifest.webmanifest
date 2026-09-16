@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "The Woodsman's Quiz",
+  "short_name": "Woodsman Quiz",
+  "description": "Book your table for The Woodsman's Quiz.",
+  "lang": "en-GB",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a0040",
+  "theme_color": "#1a0040",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
