@@ -1,27 +1,28 @@
-# The Woodsman's Quiz — GitHub upload package
+# The Woodsman's Quiz — complete upload package
 
-## Upload
-1. Unzip the download on your computer.
-2. Open your existing website repository on GitHub and choose **Add file → Upload files**.
-3. Upload the CONTENTS of this folder: `index.html`, `manifest.webmanifest`, the `icons` folder and `.nojekyll`. Keep the icons inside their folder. Replace the existing index.html. Do not upload the ZIP itself or place these files inside an extra github-package folder.
-4. Commit the changes. If your repository already publishes its root through GitHub Pages, keep that setup.
-5. Otherwise go to **Settings → Pages**, choose **Deploy from a branch**, choose your uploaded branch (usually `main`) and **/(root)**, then Save. If your existing Pages source is `/docs`, upload the same contents there instead.
-6. Open the HTTPS website address shown by GitHub Pages when publishing finishes. Refresh the page to pick up the new icon.
+## Which files are included?
+- index.html: your supplied index(27).html, with the View Live Quiz button.
+- live.html: the live-quiz page you supplied immediately before index(27).html.
+- icons/: the generated Woodsman's Q icon in browser and home-screen sizes.
+- manifest.webmanifest: app name, icon and launch settings.
+- .nojekyll: static GitHub Pages configuration.
 
-GitHub documentation: https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+Both supplied HTML files are preserved exactly apart from added icon/manifest metadata. The existing theme colour on the live page is preserved. The View Live Quiz button opens live.html beside index.html. The home-screen app launches the booking page.
+
+## Upload to GitHub
+1. Unzip the package.
+2. In your website repository, choose Add file → Upload files.
+3. Upload the CONTENTS of the unzipped folder to your publishing folder, replacing index.html and live.html. Keep the icons folder intact. Upload the files, not the ZIP or an extra enclosing folder.
+4. Commit the changes. Keep your existing GitHub Pages setup if it already works. Otherwise use Settings → Pages → Deploy from a branch → main → /(root) → Save. If your publishing folder is /docs, upload everything into that folder instead.
+5. Keep any existing CNAME file for your custom domain.
+6. Visit the HTTPS site after publishing, refresh, and check View Live Quiz.
+
+Official guide: https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
 
 ## Home-screen icon
-On iPhone/iPad, open the published site in Safari and use Share → Add to Home Screen. On Android, use the browser's Add to Home screen / Install option when available. Installation menus vary by browser. Existing home-screen shortcuts may retain their old icon; remove and add the shortcut again if necessary.
-
-## Included
-- Latest website, including restored background/logo, forecast dates and divider, jackpot comparisons and expanded weekly summary.
-- PNG icons at 32, 180, 192 and 512 pixels.
-- App manifest with relative URLs, so it works under a GitHub repository path or a custom domain.
-- Existing background, logo and booking sound remain embedded in the HTML.
-
-No build step, npm install, GitHub Actions configuration or new API key is needed. Keep any existing CNAME file if you use a custom domain.
+Open the published site in Safari on iPhone/iPad and use Share → Add to Home Screen. On Android use your browser's Add to Home screen / Install option when offered. Existing shortcuts may retain their old icon until removed and added again.
 
 ## Existing services
-This is the website front end. It retains the supplied Supabase connection and existing notification integration; it does not create or migrate a database. The existing backend functions and permissions must remain available. Bookings, finance, charts and external fonts need an internet connection. This package does not add offline booking or cache customer/finance responses.
+No build step or new API key is needed. The supplied Supabase connections, backend functions, host sign-in, realtime subscriptions and notification settings remain unchanged. The existing backend must remain available; this package does not create or migrate it. Internet access is required. No offline booking or caching of customer/finance responses is added.
 
-The package has been checked for JavaScript syntax, icon dimensions and local asset links. Live booking submissions and deployment to your GitHub account have not been tested or performed.
+Verification: HTML source preservation, JavaScript syntax, local asset references, icon dimensions and archive contents. Live submissions, host sign-in, realtime data and GitHub deployment have not been tested or performed.
